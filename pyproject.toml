@@ -1,0 +1,12 @@
+[project]
+name = "edgygraph"
+version = "0.0.0"
+description = "Graph-based Pipeline Builder"
+authors = [{ name="Mathis Siebert" }]
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
