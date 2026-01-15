@@ -14,9 +14,9 @@ T = TypeVar('T', bound=GraphState)
 
 class GraphEdge(Generic[T]):
 
-    source: GraphNode[T] | Type[START]
+    source: GraphNode[T] | Type[START] | list[GraphNode[T] | Type[START]]
     next: Callable[[T], GraphNode[T] | Type[END]]
 
-    def __init__(self, source: GraphNode[T] | Type[START], next: Callable[[T], GraphNode[T] | Type[END]]):
+    def __init__(self, source: GraphNode[T] | Type[START] | list[GraphNode[T] | Type[START]], next: Callable[[T], GraphNode[T] | Type[END]]):
         self.source = source
         self.next = next
