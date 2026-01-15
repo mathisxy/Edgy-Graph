@@ -1,25 +1,26 @@
 from .edges import GraphEdge, START, END
 from .nodes import GraphNode
 from .states import GraphState
-from typing import Type
+from typing import Type, TypeVar, Generic
 
+T = TypeVar('T', bound=GraphState)
 
-class GraphExecutor:
+class GraphExecutor(Generic[T]):
 
-    edges: list[GraphEdge]
+    edges: list[GraphEdge[T]]
 
-    def __init__(self, edges: list[GraphEdge]):
+    def __init__(self, edges: list[GraphEdge[T]]):
         self.edges = edges
 
-    async def __call__(self, initial_state: GraphState) -> GraphState:
+    async def __call__(self, initial_state: T) -> T:
         state = initial_state
-        current_node: GraphNode[GraphState] | Type[START] = START
+        current_node: GraphNode[T] | Type[START] = START
 
-        index_dict: dict[GraphNode[GraphState] | Type[START], GraphEdge] = {edge.source: edge for edge in self.edges}
+        index_dict: dict[GraphNode[T] | Type[START], GraphEdge[T]] = {edge.source: edge for edge in self.edges}
 
         while True:
             # Find the edge corresponding to the current node
-            edge: GraphEdge = index_dict[current_node]
+            edge: GraphEdge[T] = index_dict[current_node]
             # Determine the next node using the edge's next function
             next_node = edge.next(state)
 
