@@ -1,19 +1,19 @@
-from .edges import GraphEdge, START
+from .edges import Edge, START
 from .nodes import GraphNode
-from .states import GraphState
+from .states import State, StateUpdate
 from typing import Type, TypeVar, Generic, Callable, Awaitable, Sequence
 from collections import defaultdict
 import asyncio
 
-T = TypeVar('T', bound=GraphState)
+T = TypeVar('T', bound=State)
 
 class GraphExecutor(Generic[T]):
 
-    edges: list[GraphEdge[T]]
+    edges: list[Edge[T]]
 
-    def __init__(self, edges: list[GraphEdge[T]]):
+    def __init__(self, edges: list[Edge[T]]):
         self.edges = edges
-        self._index: dict[GraphNode[T] | Type[START], list[GraphEdge[T]]] = defaultdict(list[GraphEdge[T]])
+        self._index: dict[GraphNode[T] | Type[START], list[Edge[T]]] = defaultdict(list[Edge[T]])
 
         for edge in self.edges:
             if isinstance(edge.source, list):
@@ -21,7 +21,7 @@ class GraphExecutor(Generic[T]):
                     self._index[source].append(edge)
             else:
                 self._index[edge.source].append(edge)
-                
+
 
     async def __call__(self, initial_state: T) -> T:
         state: T = initial_state
@@ -29,7 +29,7 @@ class GraphExecutor(Generic[T]):
 
         while True:
 
-            edges: list[GraphEdge[T]] = []
+            edges: list[Edge[T]] = []
 
             for current_node in current_nodes:
 
@@ -47,13 +47,12 @@ class GraphExecutor(Generic[T]):
                 break # END
 
 
-            parallel_tasks: list[Callable[[T], Awaitable[None]]] = []
-            sequential_tasks: list[Callable[[T], Awaitable[None]]] = []
+            parallel_tasks: list[Callable[[T], Awaitable[list[StateUpdate[T]]]]] = []
+            sequential_tasks: list[StateUpdate[T]] = []
             # Determine the next node using the edge's next function
             for next_node in next_nodes:
                 
                 parallel_tasks.append(next_node.run)
-                sequential_tasks.append(next_node.seq)
 
             # Run parallel
             await asyncio.gather(*(task(state) for task in parallel_tasks))

@@ -1,5 +1,5 @@
 from typing import Callable, Type, TypeVar, Generic
-from .states import GraphState
+from .states import State
 from .nodes import GraphNode
 
 
@@ -10,9 +10,9 @@ class END:
     pass
 
 
-T = TypeVar('T', bound=GraphState)
+T = TypeVar('T', bound=State)
 
-class GraphEdge(Generic[T]):
+class Edge(Generic[T]):
 
     source: GraphNode[T] | Type[START] | list[GraphNode[T] | Type[START]]
     next: Callable[[T], GraphNode[T] | Type[END]]

@@ -1,12 +1,12 @@
-from .edges import GraphEdge, START, END
+from .edges import Edge, START, END
 from .nodes import GraphNode
-from .states import GraphState, Stream
+from .states import State, Stream
 from .graph import GraphExecutor
 
 __all__ = [
-    "GraphEdge",
+    "Edge",
     "GraphNode",
-    "GraphState",
+    "State",
     "Stream",
     "GraphExecutor",
     "START",
