@@ -1,6 +1,6 @@
 from .edges import Edge, START, END
 from .nodes import GraphNode
-from .states import State, Stream
+from .states import State, Stream, StateUpdate
 from .graph import GraphExecutor
 
 __all__ = [
@@ -8,6 +8,7 @@ __all__ = [
     "GraphNode",
     "State",
     "Stream",
+    "StateUpdate",
     "GraphExecutor",
     "START",
     "END",
