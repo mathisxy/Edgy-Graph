@@ -8,6 +8,7 @@ import asyncio
 from pydantic import BaseModel
 from enum import StrEnum, auto
 from collections import Counter
+import inspect
 
 T = TypeVar('T', bound=State)
 S = TypeVar('S', bound=Shared)
@@ -43,10 +44,18 @@ class Graph(Generic[T, S]):
                 edges.extend(self._index[current_node])
 
 
-            next_nodes: list[Node[T, S]] = [
-                n for edge in edges 
-                if isinstance((n := edge.next(state, shared)), Node)
-            ] # Only one execution of next filtering "END"s
+            # next_nodes: list[Node[T, S]] = [
+            #     n for edge in edges 
+            #     if isinstance((n := edge.next(state, shared)), Node)
+            # ] # Only one execution of next filtering "END"s
+
+            next_nodes: list[Node[T, S]] = []
+            for edge in edges:
+                res = edge.next(state, shared)
+                if inspect.isawaitable(res):
+                    res = await res  # Hier wird die async-Funktion erst ausgeführt
+                
+                next_nodes.append(res)
 
 
             if not next_nodes:

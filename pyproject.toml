@@ -1,6 +1,6 @@
 [project]
 name = "edgygraph"
-version = "0.0.43"
+version = "0.0.45"
 description = "Graph-based Pipeline Builder"
 authors = [{ name="Mathis Siebert" }]
 requires-python = ">=3.13"
