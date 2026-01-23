@@ -1,7 +1,6 @@
-# from .edges import Edge, START
 from .nodes import Node
 from .states import State, Shared
-from typing import Type, TypeVar, Callable, Sequence, Coroutine, Tuple, Any, Awaitable
+from typing import Type, Callable, Coroutine, Tuple, Any, Awaitable
 from collections import defaultdict
 import asyncio
 from pydantic import BaseModel
@@ -16,55 +15,63 @@ class END:
     pass
 
 
-T = TypeVar('T', bound=State)
-S = TypeVar('S', bound=Shared)
+type SourceType[T: State, S: Shared] = Node[T, S] | Type[START] | list[Node[T, S] | Type[START]]
+type NextType[T: State, S: Shared] = Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
+type Edge[T: State, S: Shared] = tuple[SourceType[T, S], NextType[T, S]]
 
-SourceType = Node[T, S] | Type[START] | list[Node[T, S] | Type[START]]
-NextType = Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
-Edge = Tuple[SourceType[T, S], NextType[T, S]]
-
-class Graph[T: State, S: Shared]:
+class Graph[T: State, S: Shared](BaseModel):
 
     edges: list[Edge[T, S]]
+    instant_edges: list[Edge[T, S]]
 
-    def __init__(self, edges: list[Edge[T, S]]):
-        self.edges = edges
-        self._index: dict[Node[T, S] | Type[START], list[Edge[T, S]]] = defaultdict(list[Edge[T, S]])
+    _edge_index: dict[Node[T, S] | Type[START], list[Edge[T, S]]] = defaultdict(list[Edge[T, S]])
+    _instant_edge_index: dict[Node[T, S] | Type[START], list[Edge[T, S]]] = defaultdict(list[Edge[T, S]])
 
-        for edge in self.edges:
+
+
+    def model_post_init(self, context: Any) -> None:
+        self._edge_index = self.index_edges(self.edges)
+        self._instant_edge_index = self.index_edges(self.instant_edges)
+        
+
+    def index_edges(self, edges: list[Edge[T, S]]) -> dict[Node[T, S] | Type[START], list[Edge[T, S]]]:
+        
+        edges_index: dict[Node[T, S] | Type[START], list[Edge[T, S]]] = defaultdict(list[Edge[T, S]])
+
+        for edge in edges:
             sources = edge[0]
             if isinstance(sources, list):
                 for source in sources:
-                    self._index[source].append(edge)
+                    edges_index[source].append(edge)
             else:
-                self._index[sources].append(edge)
+                edges_index[sources].append(edge)
+
+        return edges_index
+
+
 
 
     async def __call__(self, state: T, shared: S) -> Tuple[T, S]:
         
-        current_nodes: Sequence[Node[T, S] | Type[START]] = [START]
+        current_nodes: list[Node[T, S]] | list[Node[T, S] | Type[START]] = [START]
 
         while True:
 
-            edges: list[Edge[T, S]] = []
-
-            for current_node in current_nodes:
-
-                # Find the edge corresponding to the current node
-                edges.extend(self._index[current_node])
-
-
-            next_nodes: list[Node[T, S]] = []
-            for edge in edges:
-                res = edge[1](state, shared)
-                if inspect.isawaitable(res):
-                    res = await res # for awaitables
-                
-                next_nodes.append(res)
-
+            next_nodes: list[Node[T, S]] = await self.get_next_nodes(state, shared, current_nodes, self._edge_index)
 
             if not next_nodes:
                 break # END
+
+
+            current_instant_nodes: list[Node[T, S]] = next_nodes.copy()
+            while True:
+
+                current_instance_nodes = await self.get_next_nodes(state, shared, current_instant_nodes, self._instant_edge_index)
+                
+                if not current_instance_nodes:
+                    break
+                
+                next_nodes.extend(current_instant_nodes)
 
             
             parallel_tasks: list[Callable[[T, S], Coroutine[None, None, None]]] = []
@@ -93,7 +100,25 @@ class Graph[T: State, S: Shared]:
 
         return state, shared
 
+    async def get_next_nodes(self, state: T, shared: S, current_nodes: list[Node[T, S]] | list[Node[T, S] | Type[START]], edge_index: dict[Node[T, S] | Type[START], list[Edge[T, S]]]) -> list[Node[T, S]]:
+        edges: list[Edge[T, S]] = []
+
+        for current_node in current_nodes:
+
+            # Find the edge corresponding to the current node
+            edges.extend(self._edge_index[current_node])
+
+
+        next_nodes: list[Node[T, S]] = []
+        for edge in edges:
+            res = edge[1](state, shared)
+            if inspect.isawaitable(res):
+                res = await res # for awaitables
+            
+            if isinstance(res, Node):
+                next_nodes.append(res)
         
+        return next_nodes
 
 
     def merge_states(self, current_state: T, result_states: list[T]) -> T:
