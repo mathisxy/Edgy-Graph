@@ -16,10 +16,10 @@ class END:
 
 
 type SourceType[T: State, S: Shared] = Node[T, S] | Type[START] | list[Node[T, S] | Type[START]]
-type NextType[T: State, S: Shared] = Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
+type NextType[T: State, S: Shared] = Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]] | Node[T, S]
 type Edge[T: State, S: Shared] = tuple[SourceType[T, S], NextType[T, S]]
 
-class Graph[T: State, S: Shared](BaseModel):
+class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -117,12 +117,19 @@ class Graph[T: State, S: Shared](BaseModel):
 
         next_nodes: list[Node[T, S]] = []
         for edge in edges:
-            res = edge[1](state, shared)
-            if inspect.isawaitable(res):
-                res = await res # for awaitables
+
+            next = edge[1]
+
+            if isinstance(next, Callable):
+                res = next(state, shared)
+                if inspect.isawaitable(res):
+                    res = await res # for awaitables
+                
+                if isinstance(res, Node):
+                    next_nodes.append(res)
             
-            if isinstance(res, Node):
-                next_nodes.append(res)
+            else:
+                next_nodes.append(next)
         
         return next_nodes
 
