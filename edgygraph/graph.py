@@ -6,6 +6,7 @@ import asyncio
 from pydantic import BaseModel, ConfigDict, Field
 from enum import StrEnum, auto
 from collections import Counter
+from rich import print as rprint
 import inspect
 
 class START:
@@ -69,16 +70,16 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
                 current_instant_nodes = await self.get_next_nodes(state, shared, current_instant_nodes, self._instant_edge_index)
                 
-                print("Instant Nodes:")
-                print(current_instant_nodes)
+                rprint("INSTANT NODES")
+                rprint(current_instant_nodes)
 
                 if not current_instant_nodes:
                     break
                 
                 next_nodes.extend(current_instant_nodes)
 
-            print("Next Nodes:")
-            print(next_nodes)
+            rprint("NEXT NODES")
+            rprint(next_nodes)
             
             parallel_tasks: list[Callable[[T, S], Coroutine[None, None, None]]] = []
 
@@ -148,8 +149,9 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         for result_dict in result_dicts:
 
             changes_list.append(Diff.recursive_diff(current_dict, result_dict))
-                    
-        print(changes_list)
+        
+        rprint("CHANGES")
+        rprint(changes_list)
         
         conflicts = Diff.find_conflicts(changes_list)
 
@@ -160,6 +162,9 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
             Diff.apply_patch(current_dict, changes)
 
         state: T = state_class.model_validate(current_dict)
+
+        rprint("NEW STATE")
+        rprint(state)
 
         return state
     
