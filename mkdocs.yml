@@ -1,0 +1,19 @@
+site_name: edgygraph
+repo_url: https://github.com/mathisxy/Edgy-Graph
+repo_name: mathisxy/Edgy-Graph
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.top
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings
+
+nav:
+  - Home: index.md
+  - API:
+      - Core: api/core.md
