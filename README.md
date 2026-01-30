@@ -2,9 +2,9 @@
 
 [![Pipy](https://img.shields.io/pypi/v/edgygraph)](https://pypi.org/project/edgygraph/)
 [![Downloads](https://img.shields.io/pypi/dm/edgygraph)](https://pypi.org/project/edgygraph/#files)
-[![Issues](https://img.shields.io/github/issues/mathisxy/Edgy-Graph)](https://github.com/mathisxy/Edgy-Graph/issues)
-[![Deploy Docs](https://github.com/mathisxy/Edgy-Graph/actions/workflows/docs.yml/badge.svg)](https://github.com/mathisxy/Edgy-Graph/actions/workflows/docs.yml)
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://mathisxy.github.io/Edgy-Graph/)
+[![Issues](https://img.shields.io/github/issues/mathisxy/edgygraph)](https://github.com/mathisxy/edgygraph/issues)
+[![Deploy Docs](https://github.com/mathisxy/edgygraph/actions/workflows/docs.yml/badge.svg)](https://github.com/mathisxy/Edgy-Graph/actions/workflows/docs.yml)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://mathisxy.github.io/edgygraph/)
 
 > **Status**: 🚧 In Development
 
