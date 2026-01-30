@@ -1,5 +1,7 @@
-from abc import ABC, abstractmethod
 from .states import State, Shared
+
+from abc import ABC, abstractmethod
+
 
 class Node[T: State = State, S: Shared = Shared](ABC):
     """

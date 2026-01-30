@@ -1,14 +1,17 @@
 from .nodes import Node, START, END
 from .states import State, Shared
 from .rich import RichReprMixin
+from .logging import get_logger
+
 from typing import Type, Callable, Coroutine, Tuple, Any, Awaitable
 from collections import defaultdict
 import asyncio
 from pydantic import BaseModel, ConfigDict, Field
 from enum import StrEnum, auto
 from collections import Counter
-from rich import print as rprint
 import inspect
+
+logger = get_logger(__name__)
 
 
 type SourceType[T: State, S: Shared] = Node[T, S] | Type[START] | list[Node[T, S] | Type[START]]
@@ -102,17 +105,15 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
                 current_instant_nodes = await self.get_next_nodes(state, shared, current_instant_nodes, self._instant_edge_index)
                 
-                rprint("INSTANT NODES")
-                rprint(current_instant_nodes)
+                logger.debug("CURRENT INSTANT NODES: %s", current_instant_nodes)
 
                 if not current_instant_nodes:
                     break
                 
                 next_nodes.extend(current_instant_nodes)
 
-            rprint("NEXT NODES")
-            rprint(next_nodes)
-            
+            logger.debug("NEXT NODES: %s", next_nodes)
+
             parallel_tasks: list[Callable[[T, S], Coroutine[None, None, None]]] = []
 
 
@@ -209,8 +210,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
             changes_list.append(Diff.recursive_diff(current_dict, result_dict))
         
-        rprint("CHANGES")
-        rprint(changes_list)
+        logger.debug(f"CHANGES: %s", changes_list)
         
         conflicts = Diff.find_conflicts(changes_list)
 
@@ -222,8 +222,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
         state: T = state_class.model_validate(current_dict)
 
-        rprint("NEW STATE")
-        rprint(state)
+        logger.debug("NEW STATE: %s", state)
 
         return state
     
