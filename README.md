@@ -1,4 +1,4 @@
-# Graph-based Pipeline Builder
+# Typed Graph-based Pipeline Builder
 
 ![Pipy](https://img.shields.io/pypi/v/edgygraph)
 ![Downloads](https://img.shields.io/pypi/dm/edgygraph)
