@@ -18,7 +18,7 @@ Edgy Graph is a framework for building and executing graph-based pipelines. It s
 - **Inheritance and Variance**: Expandable state and node classes with inheritance
 - **Asynchronous Execution**: Full `async/await` support for nodes
 - **Parallel Task Processing**: Multiple nodes can execute simultaneously
-- **State Management**: Best of both worlds; state management with conflict detection and shared object with lock
+- **State Management**: Best of both worlds; state management with conflict detection and shared instance with lock
 - **Flexible Routing**: Simple or complex; dynamic path decisions based on functions or simple node to node edges
 - **Streaming**: Standardized interface for streaming to next nodes
 
