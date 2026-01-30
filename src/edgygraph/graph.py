@@ -316,17 +316,14 @@ class Diff:
     
 
     @classmethod
-    def apply_changes(cls, target: dict[str, Any], changes: dict[str, Change]):
+    def apply_changes(cls, target: dict[str, Any], changes: dict[str, Change]) -> None:
         """
-        Applies a set of changes to a dictionary.
+        Applies a set of changes to the target dictionary.
 
 
         Arguments:
             target: The dictionary to apply the changes to.
             changes: A mapping of paths, separated by dots, to changes. The changes are applied in the dictionary on that level.
-
-        Returns:
-            The modified dictionary.
         """
 
         for path, change in changes.items():
