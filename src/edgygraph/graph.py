@@ -12,7 +12,7 @@ import inspect
 
 class START:
     """
-    Represents a start nodedd
+    Represents a start node
     """
     pass
 
@@ -29,10 +29,12 @@ type Edge[T: State, S: Shared] = tuple[SourceType[T, S], NextType[T, S]]
 
 class Graph[T: State = State, S: Shared = Shared](BaseModel):
     """
-    Create and execute a graph based on edges
+    Create and execute a graph defined by a list of edges.
 
-    Set the required State and Shared classes via the Generic Typing Parameters
-    Because of variance its possible to use nodes, that use more general State and Shared classes (ancestors) as the Generic Typing Parameters
+    Set the required State and Shared classes via the Generic Typing Parameters.
+    Because of variance its possible to use nodes, that use more general State and Shared classes (ancestors) as the Generic Typing Parameters. 
+
+    The edges are defined as a list of tuples, where the first element is the source node and the second element reveals the next node.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
