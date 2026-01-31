@@ -6,8 +6,11 @@
 [![Deploy Docs](https://github.com/mathisxy/edgygraph/actions/workflows/docs.yml/badge.svg)](https://github.com/mathisxy/Edgy-Graph/actions/workflows/docs.yml)
 [![Documentation](https://img.shields.io/badge/Docs-GitHub%20Pages-blue)](https://mathisxy.github.io/edgygraph/)
 
+<<<<<<< HEAD
 > **Status**: In Development
 
+=======
+>>>>>>> 767ce37cbbd57b9444109943dfe5a3ddffccc62b
 A **pydantically** typed, lightweight **graph framework** for Python that combines features from [Langgraph](https://github.com/langchain-ai/langgraph) with **static type security**.
 
 ## Overview

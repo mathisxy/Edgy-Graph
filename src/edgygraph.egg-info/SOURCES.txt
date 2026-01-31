@@ -1,0 +1,14 @@
+README.md
+pyproject.toml
+src/edgygraph/__init__.py
+src/edgygraph/graph.py
+src/edgygraph/logging.py
+src/edgygraph/nodes.py
+src/edgygraph/py.typed
+src/edgygraph/rich.py
+src/edgygraph/states.py
+src/edgygraph.egg-info/PKG-INFO
+src/edgygraph.egg-info/SOURCES.txt
+src/edgygraph.egg-info/dependency_links.txt
+src/edgygraph.egg-info/requires.txt
+src/edgygraph.egg-info/top_level.txt

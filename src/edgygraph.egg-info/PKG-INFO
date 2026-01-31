@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: edgygraph
+Version: 0.0.73
+Summary: Graph-based Pipeline Builder
+Author: Mathis Siebert
+Requires-Python: >=3.13
+Requires-Dist: pydantic>=2.0
