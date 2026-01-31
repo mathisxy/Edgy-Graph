@@ -1,0 +1,27 @@
+name: Type Check
+
+on: 
+  push: 
+    branches: [main]
+  pull_request: 
+
+jobs:
+  pyright:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install .[dev]
+
+      - name: Run pyright
+        run: |
+          pyright
