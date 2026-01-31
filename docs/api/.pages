@@ -1,0 +1,5 @@
+nav:
+    - Graph: graph.md
+    - Nodes: nodes.md
+    - States: states.md
+    - Repr. Mixin: rich.md

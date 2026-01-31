@@ -1,6 +1,13 @@
 from pydantic import Field, BaseModel
 
 class RichReprMixin(BaseModel):
+    """
+    Mixin to limit the length of values in the rich representation of a Pydantic model.
+    This is useful for large objects that should not be displayed in their entirety in the rich representation.
+
+    Set MAX_CHARS_PER_VALUE to the maximum number of characters to display for each value.
+    If a value exceeds this limit, it will be displayed as ```<object of length: {len(str(value))}>```.
+    """
 
     MAX_CHARS_PER_VALUE: int = Field(default=2000, exclude=True)
 

@@ -11,11 +11,6 @@ class Node[T: State = State, S: Shared = Shared](ABC):
     Due to variance the node can also take any subtype of the state and shared state.
 
     The node must implement the `run` method, which will be called when the node is executed.
-
-    Arguments:
-        T: The type of the state that the node will use.
-        S: The type of the shared state that the node will use.
-
     """
     
     @abstractmethod
@@ -30,7 +25,7 @@ class Node[T: State = State, S: Shared = Shared](ABC):
         Therefore, the shared state is shared between nodes and operations are not safe without using the Lock.
         The lock can be accessed via `shared.lock`.
 
-        Arguments:
+        Args:
             state: The state of the graph.
             shared: The shared state of the graph.
 

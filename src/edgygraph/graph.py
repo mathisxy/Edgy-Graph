@@ -27,9 +27,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
     The edges are defined as a list of tuples, where the first element is the source node and the second element reveals the next node.
 
-    Arguments:
-        T: The state class
-        S: The shared state class
+    Args:
         edges: A list of edges of compatible nodes that build the graph
         instant_edge: A list of edges of compatible nodes that run parallel to there source node
     """
@@ -55,7 +53,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         """
         Index the edges by source node
 
-        Arguments:
+        Args:
            edges: The edges to index
 
         Returns:
@@ -82,7 +80,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         """
         Execute the graph based on the edges
 
-        Arguments:
+        Args:
             state: State of the first generic type of the graph or a subtype
             shared: Shared of the second generic type of the graph or a subtype
 
@@ -143,7 +141,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
     async def get_next_nodes(self, state: T, shared: S, current_nodes: list[Node[T, S]] | list[Node[T, S] | Type[START]], edge_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]]) -> list[Node[T, S]]:
         """
-        Arguments:
+        Args:
             state: The current state
             shared: The shared state
             current_nodes: The current nodes
@@ -189,9 +187,10 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         Merges the result states into the current state.
         First the changes are calculated for each result state.
         Then the changes are checked for conflicts.
+        If there are conflicts, a ChangeConflictException is raised.
         The changes are applied in the order of the result states list.
 
-        Arguments:
+        Args:
             current_state: The current state
             result_states: The result states
 
@@ -260,7 +259,7 @@ class Diff:
         """
         Finds conflicts in a list of changes.
 
-        Arguments:
+        Args:
            changes: A list of dictionaries representing changes to a state.
         """
 
@@ -284,7 +283,7 @@ class Diff:
         Recursively computes the differences between two dictionaries.
 
 
-        Arguments:
+        Args:
             old: Part of the old dictionary.
             new: Part of the new dictionary.
             path: The current path of the parts in the full dictionary, seperated with dots.
@@ -321,7 +320,7 @@ class Diff:
         Applies a set of changes to the target dictionary.
 
 
-        Arguments:
+        Args:
             target: The dictionary to apply the changes to.
             changes: A mapping of paths, separated by dots, to changes. The changes are applied in the dictionary on that level.
         """

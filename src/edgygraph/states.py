@@ -36,10 +36,9 @@ class Stream[T: object](ABC, AsyncIterator[T]):
     """
     Standardized wrapper interface for streams of data.
 
-    Implements an async iterator and async context manager.
+    Set the type of the data that the stream will yield with the generic type parameter `T`.
 
-    Arguments:
-        T: The type of the data that the stream will yield.
+    Implements an async iterator and async context manager.
     """
 
     @abstractmethod
