@@ -1,0 +1,2 @@
+- [ ] Graph visualization
+- [ ] Debug mode with node by node execution
