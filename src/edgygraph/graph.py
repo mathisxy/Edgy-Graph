@@ -144,13 +144,13 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
     async def get_next_nodes(self, state: T, shared: S, current_nodes: list[Node[T, S]] | list[Node[T, S] | Type[START]], edge_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]]) -> list[Node[T, S]]:
         """
         Arguments:
-            state: The current State
-            shared: The Shared
+            state: The current state
+            shared: The shared state
             current_nodes: The current nodes
 
         Returns:
-           The list of the next nodes to run based on the current nodes and edges
-           If an edge is a callable, it will be called with the current State and Shared
+           The list of the next nodes to run based on the current nodes and edges.
+           If an edge is a callable, it will be called with the current state and shared state.
         """
 
 
@@ -186,18 +186,20 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
     def merge_states(self, current_state: T, result_states: list[T]) -> T:
         """
-        Merges the result States into the current State.
-        First the changes are calculated for each result State.
+        Merges the result states into the current state.
+        First the changes are calculated for each result state.
         Then the changes are checked for conflicts.
-        If there are conflicts, an exception is raised.
-        The changes are applied in the order of the result States list.
+        The changes are applied in the order of the result states list.
 
         Arguments:
-            current_state: The current State
-            result_states: The result States
+            current_state: The current state
+            result_states: The result states
 
         Returns:
-            The merged State, the same instance as the current State but with the changes applied
+            The new merged State instance.
+
+        Raises:
+            ChangeConflictException: If there are conflicts in the changes.
         """
             
         result_dicts = [state.model_dump() for state in result_states]
@@ -215,7 +217,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         conflicts = Diff.find_conflicts(changes_list)
 
         if conflicts:
-            raise Exception(f"Conflicts detected after parallel execution: {conflicts}")
+            raise ChangeConflictException(f"Conflicts detected after parallel execution: {conflicts}")
 
         for changes in changes_list:
             Diff.apply_changes(current_dict, changes)
@@ -226,7 +228,6 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
         return state
     
-            
 
 class ChangeTypes(StrEnum):
     """
@@ -343,3 +344,12 @@ class Diff:
             else:
                 # UPDATED or ADDED
                 cursor[last_key] = change.new
+
+
+
+class ChangeConflictException(Exception):
+    """
+    Exception raised when a conflict between changes to a state is detected.
+    """
+    pass
+
