@@ -1,0 +1,9 @@
+{
+  "typeCheckingMode": "strict",
+  "pythonVersion": "3.13",
+  "reportMissingTypeStubs": true,
+  "reportUnknownMemberType": true,
+  "reportUnknownArgumentType": true,
+  "reportUnknownVariableType": true,
+  "exclude": []
+}
