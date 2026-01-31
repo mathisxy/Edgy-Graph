@@ -22,7 +22,7 @@ jobs:
 
       - name: Install documentation dependencies
         run: |
-          pip install mkdocs mkdocs-material mkdocstrings[python] mkdocs-awesome-pages-plugin
+          pip install .[dev]
 
       - name: Build and deploy documentation
         run: mkdocs gh-deploy --force
