@@ -30,7 +30,7 @@ Edgy Graph is a framework for building and executing graph-based pipelines. It s
 ```bash
 pip install edgygraph
 ```
-> Python 3.13 or higher is required
+> Python 3.13+ is required
 
 
 ## Example Workflow
