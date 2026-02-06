@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pydantic import BaseModel, ConfigDict, Field
-from typing import AsyncIterator
+from typing import AsyncIterator, Protocol, runtime_checkable
 from types import TracebackType
 from asyncio import Lock
 
@@ -30,6 +30,39 @@ class Shared(BaseModel):
     """
     lock: Lock = Field(default_factory=Lock)
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+@runtime_checkable
+class StateProtocol(Protocol):
+    """
+    Protocol for the state. Used for type hinting.
+    """
+    pass
+
+@runtime_checkable
+class SharedProtocol(Protocol):
+    """
+    Protocol for the shared state. Used for type hinting.
+    """
+    lock: Lock
+
+
+class StateAttribute(BaseModel):
+    """
+    Base class for state attributes. State attributes are used to define variables in the state that can be accessed by the nodes.
+    Implements pydantic's BaseModel.
+    """
+    pass
+
+
+class SharedAttribute(BaseModel):
+    """
+    Base class for shared state attributes. Shared state attributes are used to define variables in the shared state that can be accessed by the nodes.
+    Implements pydantic's BaseModel.
+    """
+    pass
+
+
 
 
 class Stream[T: object](ABC, AsyncIterator[T]):

@@ -9,7 +9,7 @@ classifiers = [
 ]
 
 name = "edgygraph"
-version = "0.0.74"
+version = "0.0.75"
 description = "Graph-based Pipeline Builder"
 authors = [{ name="Mathis Siebert", email="mathis.siebert@gmail.com" }]
 readme = "README.md"

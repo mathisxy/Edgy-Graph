@@ -1,10 +1,152 @@
 Metadata-Version: 2.4
 Name: edgygraph
-Version: 0.0.74
+Version: 0.0.75
 Summary: Graph-based Pipeline Builder
-Author: Mathis Siebert
+Author-email: Mathis Siebert <mathis.siebert@gmail.com>
+License: MIT License
+        
+        Copyright (c) 2026 Mathis Siebert
+        
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+        
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+        
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+        
+Project-URL: Homepage, https://github.com/mathisxy/edgygraph
+Project-URL: Documentation, https://mathisxy.github.io/edgygraph/
+Project-URL: Repository, https://github.com/mathisxy/edgygraph
+Project-URL: Issues, https://github.com/mathisxy/edgygraph/issues
 Classifier: Development Status :: 3 - Alpha
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Topic :: Software Development :: Libraries
 Classifier: Intended Audience :: Developers
 Classifier: Programming Language :: Python :: 3.13
 Requires-Python: >=3.13
+Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: pydantic>=2.0
+Requires-Dist: rich>=14.0
+Provides-Extra: dev
+Requires-Dist: pyright; extra == "dev"
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: coverage; extra == "dev"
+Provides-Extra: docs
+Requires-Dist: mkdocs; extra == "docs"
+Requires-Dist: mkdocs-material; extra == "docs"
+Requires-Dist: mkdocstrings[python]; extra == "docs"
+Requires-Dist: mkdocs-awesome-pages-plugin; extra == "docs"
+Dynamic: license-file
+
+# Typed Graph-based Pipeline Builder
+
+[![Pipy](https://img.shields.io/pypi/v/edgygraph)](https://pypi.org/project/edgygraph/)
+[![Downloads](https://img.shields.io/pypi/dm/edgygraph)](https://pypi.org/project/edgygraph/#files)
+[![Issues](https://img.shields.io/github/issues/mathisxy/edgygraph)](https://github.com/mathisxy/edgygraph/issues)
+[![Type Check](https://github.com/mathisxy/edgygraph/actions/workflows/typecheck.yml/badge.svg)](https://github.com/mathisxy/Edgy-Graph/actions/workflows/typecheck.yml)
+[![Deploy Docs](https://github.com/mathisxy/edgygraph/actions/workflows/docs.yml/badge.svg)](https://github.com/mathisxy/Edgy-Graph/actions/workflows/docs.yml)
+[![Documentation](https://img.shields.io/badge/Docs-GitHub%20Pages-blue)](https://mathisxy.github.io/edgygraph/)
+
+A **pydantically** typed, lightweight **graph framework** for Python that combines features from [Langgraph](https://github.com/langchain-ai/langgraph) with **static type security**.
+
+## Overview
+
+Edgy Graph is a framework for building and executing graph-based pipelines. It supports:
+
+- **Pydantic Typing** <br> Built on Pydantic and Generics for complete static type safety.
+- **Inheritance and Variance**: <br> Easily extend and specialize state and node classes.
+- **Parallel Task Processing**: <br> Multiple nodes can run simultaneously
+- **Dual State Management**:
+    - State with automatic change extraction and conflict detection
+    - Shared state accessible by all nodes, protected via explicit locking
+- **Flexible Routing**: <br> Define simple node-to-node edges or dynamic routing based on functions.
+- **Streaming**: <br> A standardized interface for streaming data between nodes.
+
+## Installation
+
+### PyPI
+```bash
+pip install edgygraph
+```
+> Python 3.13 or higher is required
+
+
+## Example Workflow
+
+### Import Classes
+
+```python
+from edgygraph import State, Shared, Node, START, END, Graph
+import asyncio
+```
+
+### Create a State
+
+```python
+class MyState(State):
+
+    capslock: bool = False
+```
+
+### Create a Node
+
+```python
+class MyNode(Node[MyState, Shared]):
+
+    async def run(self, state: MyState, shared: Shared) -> None:
+
+        if state.capslock:
+            print("HELLO WORLD!")
+        else:
+            print("Hello World!")
+```
+
+### Create Instances
+
+```python
+state = MyState(capslock=True)
+shared = Shared()
+
+node = MyNode()
+```
+
+### Create a Graph
+
+```python
+Graph[MyState, Shared](
+    edges=[
+        (
+            START,
+            node
+        ),
+        (
+            node,
+            END
+        )
+    ]
+)
+```
+
+### Run Graph
+
+```python
+asyncio.run(graph(state, shared))
+```
+
+<br>
+
+ > More examples can be found in the examples folder
+
+
