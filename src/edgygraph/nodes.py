@@ -1,9 +1,9 @@
-from .states import State, Shared, StateProtocol, SharedProtocol
+from .states import StateProtocol, SharedProtocol
+from typing import Protocol, runtime_checkable
 
-from abc import ABC, abstractmethod
 
-
-class Node[T: StateProtocol = State, S: SharedProtocol = Shared](ABC):
+@runtime_checkable
+class NodeProtocol[T: StateProtocol, S: SharedProtocol](Protocol):
     """
     Represents a node in the graph.
 
@@ -13,7 +13,6 @@ class Node[T: StateProtocol = State, S: SharedProtocol = Shared](ABC):
     The node must implement the `run` method, which will be called when the node is executed.
     """
     
-    @abstractmethod
     async def run(self, state: T, shared: S) -> None:
         """
         Runs the node with the given state and shared state from the graph.
