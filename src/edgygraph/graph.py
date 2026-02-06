@@ -1,5 +1,5 @@
 from .nodes import Node, START, END
-from .states import State, Shared
+from .states import State, Shared, StateProtocol, SharedProtocol
 from .rich import RichReprMixin
 from .logging import get_logger
 
@@ -14,11 +14,11 @@ import inspect
 logger = get_logger(__name__)
 
 
-type SourceType[T: State, S: Shared] = Node[T, S] | Type[START] | list[Node[T, S] | Type[START]]
-type NextType[T: State, S: Shared] = Node[T, S] | Type[END] | Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
-type Edge[T: State, S: Shared] = tuple[SourceType[T, S], NextType[T, S]]
+type SourceType[T: StateProtocol, S: SharedProtocol] = Node[T, S] | Type[START] | list[Node[T, S] | Type[START]]
+type NextType[T: StateProtocol, S: SharedProtocol] = Node[T, S] | Type[END] | Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
+type Edge[T: StateProtocol, S: SharedProtocol] = tuple[SourceType[T, S], NextType[T, S]]
 
-class Graph[T: State = State, S: Shared = Shared](BaseModel):
+class Graph[T: StateProtocol = State, S: SharedProtocol = Shared](BaseModel):
     """
     Create and execute a graph defined by a list of edges.
 

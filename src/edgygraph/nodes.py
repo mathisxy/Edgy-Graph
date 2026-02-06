@@ -1,9 +1,9 @@
-from .states import State, Shared
+from .states import State, Shared, StateProtocol, SharedProtocol
 
 from abc import ABC, abstractmethod
 
 
-class Node[T: State = State, S: Shared = Shared](ABC):
+class Node[T: StateProtocol = State, S: SharedProtocol = Shared](ABC):
     """
     Represents a node in the graph.
 
