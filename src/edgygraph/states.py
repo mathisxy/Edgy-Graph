@@ -33,11 +33,21 @@ class Shared(BaseModel):
 
 
 class StateAttribute(BaseModel):
+    """
+    Holds variables of serializable types for the nodes. Arbitrary types are not allowed.
+
+    Simplifies composition in states.
+    """
     model_config = ConfigDict(arbitrary_types_allowed=False) # for deep copy
 
 class SharedAttribute(BaseModel):
+    """
+    Holds shared variables of any type for the nodes.
+
+    Simplifies composition in shared states.
+    """
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
 
 class Stream[T: object](ABC, AsyncIterator[T]):
     """
