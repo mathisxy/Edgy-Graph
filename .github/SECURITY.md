@@ -18,7 +18,7 @@ Users are encouraged to use the **latest release** for security fixes.
 We take security issues seriously. If you discover a potential vulnerability, please follow these steps:
 
 1. **Confidential Reporting**  
-   Send an email to: `security@edgygraph.org` (replace with a monitored address)  
+   Send an email to: `mathis.siebert@gmail.com`
    - Do **not** post security issues in public issues or discussion forums.  
    - Include:
      - Detailed description of the issue  
