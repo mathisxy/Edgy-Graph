@@ -1,5 +1,5 @@
-from .nodes import NodeProtocol, START, END
-from .states import State, Shared, StateProtocol, SharedProtocol
+from .nodes import Node, START, END
+from .states import State, Shared
 from .rich import RichReprMixin
 from .logging import get_logger
 
@@ -14,11 +14,11 @@ import inspect
 logger = get_logger(__name__)
 
 
-type SourceType[T: StateProtocol, S: SharedProtocol] = NodeProtocol[T, S] | Type[START] | list[NodeProtocol[T, S] | Type[START]]
-type NextType[T: StateProtocol, S: SharedProtocol] = NodeProtocol[T, S] | Type[END] | Callable[[T, S], NodeProtocol[T, S] | Type[END] | Awaitable[NodeProtocol[T, S] | Type[END]]]
-type Edge[T: StateProtocol, S: SharedProtocol] = tuple[SourceType[T, S], NextType[T, S]]
+type SourceType[T: State, S: Shared] = Node[T, S] | Type[START] | list[Node[T, S] | Type[START]]
+type NextType[T: State, S: Shared] = Node[T, S] | Type[END] | Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
+type Edge[T: State, S: Shared] = tuple[SourceType[T, S], NextType[T, S]]
 
-class Graph[T: StateProtocol = State, S: SharedProtocol = Shared](BaseModel):
+class Graph[T: State = State, S: Shared = Shared](BaseModel):
     """
     Create and execute a graph defined by a list of edges.
 
@@ -37,8 +37,8 @@ class Graph[T: StateProtocol = State, S: SharedProtocol = Shared](BaseModel):
     edges: list[Edge[T, S]] = Field(default_factory=list[Edge[T, S]])
     instant_edges: list[Edge[T, S]] = Field(default_factory=list[Edge[T, S]])
 
-    _edge_index: dict[NodeProtocol[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
-    _instant_edge_index: dict[NodeProtocol[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
+    _edge_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
+    _instant_edge_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
 
 
     def model_post_init(self, _) -> None:
@@ -49,7 +49,7 @@ class Graph[T: StateProtocol = State, S: SharedProtocol = Shared](BaseModel):
         self._instant_edge_index = self.index_edges(self.instant_edges)
         
 
-    def index_edges(self, edges: list[Edge[T, S]]) -> dict[NodeProtocol[T, S] | Type[START], list[NextType[T, S]]]:
+    def index_edges(self, edges: list[Edge[T, S]]) -> dict[Node[T, S] | Type[START], list[NextType[T, S]]]:
         """
         Index the edges by source node
 
@@ -61,7 +61,7 @@ class Graph[T: StateProtocol = State, S: SharedProtocol = Shared](BaseModel):
             
         """
         
-        edges_index: dict[NodeProtocol[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
+        edges_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
 
         for edge in edges:
             sources = edge[0]
@@ -88,17 +88,17 @@ class Graph[T: StateProtocol = State, S: SharedProtocol = Shared](BaseModel):
             New State instance and the same Shared instance
         """
         
-        current_nodes: list[NodeProtocol[T, S]] | list[NodeProtocol[T, S] | Type[START]] = [START]
+        current_nodes: list[Node[T, S]] | list[Node[T, S] | Type[START]] = [START]
 
         while True:
 
-            next_nodes: list[NodeProtocol[T, S]] = await self.get_next_nodes(state, shared, current_nodes, self._edge_index)
+            next_nodes: list[Node[T, S]] = await self.get_next_nodes(state, shared, current_nodes, self._edge_index)
 
             if not next_nodes:
                 break # END
 
 
-            current_instant_nodes: list[NodeProtocol[T, S]] = next_nodes.copy()
+            current_instant_nodes: list[Node[T, S]] = next_nodes.copy()
             while True:
 
                 current_instant_nodes = await self.get_next_nodes(state, shared, current_instant_nodes, self._instant_edge_index)
@@ -139,7 +139,7 @@ class Graph[T: StateProtocol = State, S: SharedProtocol = Shared](BaseModel):
 
         return state, shared
 
-    async def get_next_nodes(self, state: T, shared: S, current_nodes: list[NodeProtocol[T, S]] | list[NodeProtocol[T, S] | Type[START]], edge_index: dict[NodeProtocol[T, S] | Type[START], list[NextType[T, S]]]) -> list[NodeProtocol[T, S]]:
+    async def get_next_nodes(self, state: T, shared: S, current_nodes: list[Node[T, S]] | list[Node[T, S] | Type[START]], edge_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]]) -> list[Node[T, S]]:
         """
         Args:
             state: The current state
@@ -160,7 +160,7 @@ class Graph[T: StateProtocol = State, S: SharedProtocol = Shared](BaseModel):
             next_types.extend(edge_index[current_node])
 
 
-        next_nodes: list[NodeProtocol[T, S]] = []
+        next_nodes: list[Node[T, S]] = []
         for next in next_types:
 
             next = next
@@ -173,7 +173,7 @@ class Graph[T: StateProtocol = State, S: SharedProtocol = Shared](BaseModel):
                 if inspect.isawaitable(res):
                     res = await res # for awaitables
                 
-                if isinstance(res, NodeProtocol):
+                if isinstance(res, Node):
                     next_nodes.append(res)
             
             else:

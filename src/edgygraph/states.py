@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pydantic import BaseModel, ConfigDict, Field
-from typing import AsyncIterator, Protocol, runtime_checkable, Any, Self
+from typing import AsyncIterator
 from types import TracebackType
 from asyncio import Lock
 
@@ -31,30 +31,6 @@ class Shared(BaseModel):
     lock: Lock = Field(default_factory=Lock)
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-
-@runtime_checkable
-class StateProtocol(Protocol):
-    """
-    Protocol for the state. Used for type hinting.
-    """
-    
-    def model_copy(self, *, deep: bool = False) -> Self: ...
-    def model_dump(self) -> dict[str, Any]: ...
-    @classmethod
-    def model_validate(cls, obj: Any) -> Self: ...
-
-@runtime_checkable
-class SharedProtocol(Protocol):
-    """
-    Protocol for the shared state. Used for type hinting.
-    """
-
-    def model_copy(self, *, deep: bool = False) -> Self: ...
-    def model_dump(self) -> dict[str, Any]: ...
-    @classmethod
-    def model_validate(cls, obj: Any) -> Self: ...
-
-    lock: Lock
 
 
 class StateAttribute(BaseModel):
