@@ -7,7 +7,7 @@ import asyncio
 class GamblingState(State):
 
     user_guess: int | None = None
-    number: int | None = None
+    number: int = 0
     try_count: int = 0
     
 
@@ -31,8 +31,6 @@ class RollDiceNode(Node[GamblingState, Shared]):
 
     async def run(self, state: GamblingState, shared: Shared) -> None:
         
-        assert state.user_guess is not None
-
         state.number = randint(1, 10)
 
 
@@ -40,20 +38,13 @@ class FailNode(Node[GamblingState, Shared]):
 
     async def run(self, state: GamblingState, shared: Shared) -> None:
         
-        assert state.user_guess is not None
-        assert state.number is not None
-
         print(f"The number is {state.number}. You guessed {state.user_guess}. Try again!")
         state.user_guess = None
-        state.number = None
 
 
 class WinNode(Node[GamblingState, Shared]):
 
     async def run(self, state: GamblingState, shared: Shared) -> None:
-
-        assert state.user_guess is not None
-        assert state.number is not None
 
         if state.try_count == 1:
             print(f"That's amazing! The number is {state.number}. You won with your first try!")
