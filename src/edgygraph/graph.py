@@ -27,9 +27,10 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
     The edges are defined as a list of tuples, where the first element is the source node and the second element reveals the next node.
 
-    Args:
+    Attributes:
         edges: A list of edges of compatible nodes that build the graph
-        instant_edge: A list of edges of compatible nodes that run parallel to there source node
+        instant_edges: A list of edges of compatible nodes that run parallel to there source node
+        error_edges: A list of edges of compatible nodes that run if the source node raises an exception
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
