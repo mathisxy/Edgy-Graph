@@ -13,7 +13,7 @@ class MyState(State):
 
 class MyNode(Node[MyState, Shared]):
 
-    async def run(self, state: MyState, shared: Shared) -> None:
+    async def __call__(self, state: MyState, shared: Shared) -> None:
 
         if state.capslock:
             print("HELLO WORLD!")

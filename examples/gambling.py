@@ -15,7 +15,7 @@ class GamblingState(State):
 
 class GuessNode(Node[GamblingState, Shared]):
 
-    async def run(self, state: GamblingState, shared: Shared) -> None:
+    async def __call__(self, state: GamblingState, shared: Shared) -> None:
         
         guess_str = input(f"Guess a number between 1 and 10: ")
 
@@ -29,14 +29,14 @@ class GuessNode(Node[GamblingState, Shared]):
 
 class RollDiceNode(Node[GamblingState, Shared]):
 
-    async def run(self, state: GamblingState, shared: Shared) -> None:
+    async def __call__(self, state: GamblingState, shared: Shared) -> None:
         
         state.number = randint(1, 10)
 
 
 class FailNode(Node[GamblingState, Shared]):
 
-    async def run(self, state: GamblingState, shared: Shared) -> None:
+    async def __call__(self, state: GamblingState, shared: Shared) -> None:
         
         print(f"The number is {state.number}. You guessed {state.user_guess}. Try again!")
         state.user_guess = None
@@ -44,7 +44,7 @@ class FailNode(Node[GamblingState, Shared]):
 
 class WinNode(Node[GamblingState, Shared]):
 
-    async def run(self, state: GamblingState, shared: Shared) -> None:
+    async def __call__(self, state: GamblingState, shared: Shared) -> None:
 
         if state.try_count == 1:
             print(f"That's amazing! The number is {state.number}. You won with your first try!")
