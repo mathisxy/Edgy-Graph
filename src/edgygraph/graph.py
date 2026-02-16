@@ -1,5 +1,5 @@
-from .nodes import Node, START, END
-from .states import State, Shared
+from .nodes import START, END
+from .states import StateProtocol as State, SharedProtocol as Shared
 from .rich import RichReprMixin
 from .logging import get_logger
 
@@ -14,8 +14,9 @@ import inspect
 logger = get_logger(__name__)
 
 
-type SourceType[T: State, S: Shared] = Node[T, S] | Type[START] | list[Node[T, S] | Type[START]]
-type NextType[T: State, S: Shared] = Node[T, S] | Type[END] | Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
+type Node[T: State, S: Shared] = Callable[[T, S], Coroutine[None, None, None]]
+type SourceType[T: State, S: Shared] = Node[T, S] | type[START] | list[Node[T, S] | type[START]]
+type NextType[T: State, S: Shared] = Node[T, S] | type[END] # | Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
 type Edge[T: State, S: Shared] = tuple[SourceType[T, S], NextType[T, S]]
 
 class Graph[T: State = State, S: Shared = Shared](BaseModel):
@@ -65,12 +66,21 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         edges_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
 
         for edge in edges:
-            sources = edge[0]
-            if isinstance(sources, list):
-                for source in sources:
-                    edges_index[source].append(edge[1])
-            else:
-                edges_index[sources].append(edge[1])
+            match edge:
+                case (list() as sources, next_node):
+                    for source in sources:
+                        edges_index[source].append(next_node)
+                case (source, next_node):
+                    edges_index[source].append(next_node)
+
+        # for edge in edges:
+        #     sources = edge[0]
+            
+        #     if isinstance(sources, list):
+        #         for source in sources:
+        #             edges_index[source].append(edge[1])
+        #     else:
+        #         edges_index[sources].append(edge[1])
 
         return edges_index
 
@@ -113,20 +123,12 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
             logger.debug("NEXT NODES: %s", next_nodes)
 
-            parallel_tasks: list[Callable[[T, S], Coroutine[None, None, None]]] = []
-
-
-            # Extract the run function of the nodes
-            for next_node in next_nodes:
-                
-                parallel_tasks.append(next_node.run)
-
 
             # Run parallel
             result_states: list[T] = []
 
             async with asyncio.TaskGroup() as tg:
-                for task in parallel_tasks:
+                for task in next_nodes:
                     
                     state_copy: T = state.model_copy(deep=True)
                     result_states.append(state_copy)
@@ -164,21 +166,20 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         next_nodes: list[Node[T, S]] = []
         for next in next_types:
 
-            next = next
-
-            if next is END:
+            if isinstance(next, type):
+                assert next is END, "Only END is allowed as a type here"
                 continue
 
-            if isinstance(next, Callable):
-                res = next(state, shared) #type:ignore (its not an END!)
-                if inspect.isawaitable(res):
-                    res = await res # for awaitables
+            # if isinstance(next, Callable):
+            #     res = next(state, shared) #type:ignore (its not an END!)
+            #     if inspect.isawaitable(res):
+            #         res = await res # for awaitables
                 
-                if isinstance(res, Node):
-                    next_nodes.append(res)
+            #     if isinstance(res, Node):
+            #         next_nodes.append(res)
             
-            else:
-                next_nodes.append(next)
+            # else:
+            next_nodes.append(next)
         
         return next_nodes
 

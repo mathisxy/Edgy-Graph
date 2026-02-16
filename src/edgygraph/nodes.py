@@ -1,4 +1,4 @@
-from .states import State, Shared
+from .states import StateProtocol as State, SharedProtocol as Shared
 
 from abc import ABC, abstractmethod
 
@@ -10,11 +10,11 @@ class Node[T: State = State, S: Shared = Shared](ABC):
     The generic types define the type of state and shared state that the node expects.
     Due to variance the node can also take any subtype of the state and shared state.
 
-    The node must implement the `run` method, which will be called when the node is executed.
+    The node must implement the `__call__` method to run the node.
     """
     
     @abstractmethod
-    async def run(self, state: T, shared: S) -> None:
+    async def __call__(self, state: T, shared: S) -> None:
         """
         Runs the node with the given state and shared state from the graph.
 
