@@ -1,6 +1,6 @@
 site_name: edgygraph
-repo_url: https://github.com/mathisxy/Edgy-Graph
-repo_name: mathisxy/Edgy-Graph
+repo_url: https://github.com/mathisxy/edgygraph
+repo_name: mathisxy/edgygraph
 
 theme:
   name: material
