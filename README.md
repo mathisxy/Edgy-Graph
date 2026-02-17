@@ -15,7 +15,7 @@ A community collection of nodes will be available [here](https://www.github.com/
 
 Edgy Graph is a framework for building and executing graph-based pipelines. It supports:
 
-- **Pydantic Typing** <br> Built on Pydantic and Generics for complete static type safety.
+- **Pydantic Typing**: <br> Built on Pydantic and Generics for complete static type safety.
 - **Inheritance and Variance**: <br> Easily extend and specialize state and node classes.
 - **Parallel Task Processing**: <br> Multiple nodes can run simultaneously
 - **Dual State Management**:
