@@ -1,5 +1,7 @@
 nav:
-    - Graph: graph.md
+    - Graph: graphs.md
     - Nodes: nodes.md
     - States: states.md
+    - Graph Hooks: graph_hooks.md
+    - Diff: diff.md
     - Repr. Mixin: rich.md

@@ -2,7 +2,6 @@ from .nodes import START, END, Node
 from .states import StateProtocol as State, SharedProtocol as Shared
 from .graph_hooks import GraphHook
 from .diff import Change, ChangeConflictException, Diff
-from .logging import get_logger
 
 from typing import Type, Tuple, Callable, Awaitable
 from collections import defaultdict
@@ -10,10 +9,7 @@ import asyncio
 from pydantic import BaseModel, ConfigDict, Field
 import inspect
 
-logger = get_logger(__name__)
 
-
-# type Node[T: State, S: Shared] = Callable[[T, S], Coroutine[None, None, None]]
 type SourceType[T: State, S: Shared] = Node[T, S] | type[START] | list[Node[T, S] | type[START]]
 type NextType[T: State, S: Shared] = Node[T, S] | type[END] | Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
 type Edge[T: State, S: Shared] = tuple[SourceType[T, S], NextType[T, S]]
