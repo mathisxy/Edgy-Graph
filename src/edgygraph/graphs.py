@@ -165,7 +165,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
             return state, shared
         
-        
+
         except Exception as e:
             
             # Hook
@@ -176,6 +176,8 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
             
             if e:
                 raise e
+        
+            return state, shared
 
 
     
