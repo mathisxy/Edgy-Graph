@@ -14,7 +14,7 @@ from rich.tree import Tree
 
 class GraphHook[T: State, S: Shared](ABC):
     """
-    Hooks for the graph execution.
+    Hook for the graph execution.
 
     Hooks are called at different stages of the graph execution.
     They can be used to log, modify the state, or perform other actions.
@@ -99,7 +99,7 @@ class GraphHook[T: State, S: Shared](ABC):
         """
 
         pass
-    
+
 
     async def on_graph_end(self, state: T, shared: S) -> None:
         """
