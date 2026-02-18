@@ -15,7 +15,7 @@ class Properties(BaseModel):
     instant: bool = False
 
 
-type SourceType[T: State, S: Shared] = Node[T, S] | type[START] | list[Node[T, S] | type[START]]
+type SourceType[T: State, S: Shared] = Node[T, S] | type[START] | list[Node[T, S] | type[START]] | type[Exception] | tuple[Node[T, S], type[Exception]] | tuple[list[Node[T, S]], type[Exception]]
 type NextType[T: State, S: Shared] = Node[T, S] | type[END] | Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
 type Edge[T: State, S: Shared] = tuple[SourceType[T, S], NextType[T, S]] | tuple[SourceType[T, S], NextType[T, S], Properties]
 
@@ -42,6 +42,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
     _edge_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
     _instant_edge_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
+    _error_edge_index: dict[type[Exception] | tuple[Node[T, S], type[Exception]], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
 
     hooks: list[GraphHook[T, S]] = Field(default_factory=list[GraphHook[T, S]], exclude=True)
 
@@ -51,48 +52,58 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         Index the edges by source node
         """
 
-        edges: list[Edge[T, S]] = []
-        instant_edges: list[Edge[T, S]] = []
+        self.index_edges(self.edges)
 
-        for edge in self.edges:
-
-            if len(edge) == 3: # if edge is a tuple of (source, target, properties)
-
-                if edge[2].instant:
-                    instant_edges.append(edge)
-
-            else:
-                edges.append(edge)
-
-
-        self._edge_index = self.index_edges(edges)
-        self._instant_edge_index = self.index_edges(instant_edges)
         
 
-    def index_edges(self, edges: list[Edge[T, S]]) -> dict[Node[T, S] | Type[START], list[NextType[T, S]]]:
+    def index_edges(self, edges: list[Edge[T, S]]) -> None:
         """
-        Index the edges by source node
+        Index the edges by source node.
+
+        Append the edges to
+            - `_edge_index` if the edge has instant set to False in properties (default value)
+            - `_instant_edge_index` if the edge has instant set to True in properties
+            - `_error_edge_index` if the edge is an error edge with `type[Exception]` or `tuple[Node[T, S], type[Exception]]` as source
 
         Args:
            edges: The edges to index
-
-        Returns:
-            A mapping from source node (or START) to the next objects of the edge
-            
         """
-        
-        edges_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
 
         for edge in edges:
 
-            if isinstance(edge[0], list):
-                for source in edge[0]:
-                    edges_index[source].append(edge[1])
+            match edge:
+                case (source, next, properties): pass
+                case (source, next): properties = Properties()
+                case _: raise ValueError(f"Invalid edge format: {edge}")
+                
+
+            if (isinstance(source, type) and issubclass(source, Exception)): # Error edge
+
+                self._error_edge_index[source].append(next)
+
+            elif isinstance(source, tuple): # Error edge with nodes
+
+                nodes = source[0] if isinstance(source[0], list) else [source[0]]
+                et = source[1]
+
+                for node in nodes:
+                    self._error_edge_index[(node, et)].append(next)
+
+            elif isinstance(source, list): # Multiple sources
+                for s in source:
+                    if properties.instant:
+                        self._instant_edge_index[s].append(next)
+                    else:
+                        self._edge_index[s].append(next)
+
+            elif isinstance(source, Node): # Single source
+                if properties.instant:
+                    self._instant_edge_index[source].append(next)
+                else:
+                    self._edge_index[source].append(next)
+
             else:
-                edges_index[edge[0]].append(edge[1])
-
-        return edges_index
-
+                raise ValueError(f"Invalid edge source: {edge[0]}")
 
 
 
