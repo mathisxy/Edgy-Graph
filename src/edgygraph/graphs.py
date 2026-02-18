@@ -138,7 +138,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
 
             # Debug hooks
-            for h in self.hooks: await h.on_step_end(state, shared)
+            for h in self.hooks: await h.on_step_end(state, shared, next_nodes)
 
 
         # Debug hooks
