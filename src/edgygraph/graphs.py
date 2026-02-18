@@ -10,9 +10,14 @@ from pydantic import BaseModel, ConfigDict, Field
 import inspect
 
 
+class Properties(BaseModel):
+
+    instant: bool = False
+
+
 type SourceType[T: State, S: Shared] = Node[T, S] | type[START] | list[Node[T, S] | type[START]]
 type NextType[T: State, S: Shared] = Node[T, S] | type[END] | Callable[[T, S], Node[T, S] | Type[END] | Awaitable[Node[T, S] | Type[END]]]
-type Edge[T: State, S: Shared] = tuple[SourceType[T, S], NextType[T, S]]
+type Edge[T: State, S: Shared] = tuple[SourceType[T, S], NextType[T, S]] | tuple[SourceType[T, S], NextType[T, S], Properties]
 
 class Graph[T: State = State, S: Shared = Shared](BaseModel):
     """
@@ -33,7 +38,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     edges: list[Edge[T, S]] = Field(default_factory=list[Edge[T, S]])
-    instant_edges: list[Edge[T, S]] = Field(default_factory=list[Edge[T, S]])
+    # instant_edges: list[Edge[T, S]] = Field(default_factory=list[Edge[T, S]])
 
     _edge_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
     _instant_edge_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
@@ -45,8 +50,23 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         """
         Index the edges by source node
         """
-        self._edge_index = self.index_edges(self.edges)
-        self._instant_edge_index = self.index_edges(self.instant_edges)
+
+        edges: list[Edge[T, S]] = []
+        instant_edges: list[Edge[T, S]] = []
+
+        for edge in self.edges:
+
+            if len(edge) == 3: # if edge is a tuple of (source, target, properties)
+
+                if edge[2].instant:
+                    instant_edges.append(edge)
+
+            else:
+                edges.append(edge)
+
+
+        self._edge_index = self.index_edges(edges)
+        self._instant_edge_index = self.index_edges(instant_edges)
         
 
     def index_edges(self, edges: list[Edge[T, S]]) -> dict[Node[T, S] | Type[START], list[NextType[T, S]]]:
@@ -64,12 +84,12 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         edges_index: dict[Node[T, S] | Type[START], list[NextType[T, S]]] = defaultdict(list[NextType[T, S]])
 
         for edge in edges:
-            match edge:
-                case (list() as sources, next_node):
-                    for source in sources:
-                        edges_index[source].append(next_node)
-                case (source, next_node):
-                    edges_index[source].append(next_node)
+
+            if isinstance(edge[0], list):
+                for source in edge[0]:
+                    edges_index[source].append(edge[1])
+            else:
+                edges_index[edge[0]].append(edge[1])
 
         return edges_index
 
@@ -88,60 +108,76 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
             New State instance and the same Shared instance
         """
 
-        # Debug hooks
-        for h in self.hooks: await h.on_graph_start(state, shared)
+        try:
 
-        
-        current_nodes: list[Node[T, S]] | list[Node[T, S] | Type[START]] = [START]
+            # Hook
+            for h in self.hooks: await h.on_graph_start(state, shared)
 
-        while True:
-
-            next_nodes: list[Node[T, S]] = await self.get_next_nodes(state, shared, current_nodes, self._edge_index)
-
-            if not next_nodes:
-                break # END
-
-
-            current_instant_nodes: list[Node[T, S]] = next_nodes.copy()
+            
+            current_nodes: list[Node[T, S]] | list[Node[T, S] | Type[START]] = [START]
 
             while True:
 
-                current_instant_nodes = await self.get_next_nodes(state, shared, current_instant_nodes, self._instant_edge_index)
-                
-                if not current_instant_nodes:
-                    break
-                
-                next_nodes.extend(current_instant_nodes)
+                next_nodes: list[Node[T, S]] = await self.get_next_nodes(state, shared, current_nodes, self._edge_index)
+
+                if not next_nodes:
+                    break # END
 
 
-            # Debug hooks
-            for h in self.hooks: await h.on_step_start(state, shared, next_nodes)
+                current_instant_nodes: list[Node[T, S]] = next_nodes.copy()
 
-            # Run parallel
-            result_states: list[T] = []
+                while True:
 
-            async with asyncio.TaskGroup() as tg:
-                for task in next_nodes:
+                    current_instant_nodes = await self.get_next_nodes(state, shared, current_instant_nodes, self._instant_edge_index)
                     
-                    state_copy: T = state.model_copy(deep=True)
-                    result_states.append(state_copy)
-
-                    tg.create_task(task(state_copy, shared))
-
-            state = await self.merge_states(state, result_states)
-
-            current_nodes = next_nodes
+                    if not current_instant_nodes:
+                        break
+                    
+                    next_nodes.extend(current_instant_nodes)
 
 
-            # Debug hooks
-            for h in self.hooks: await h.on_step_end(state, shared, next_nodes)
+                # Hook
+                for h in self.hooks: await h.on_step_start(state, shared, next_nodes)
+
+                # Run parallel
+                result_states: list[T] = []
+
+                async with asyncio.TaskGroup() as tg:
+                    for task in next_nodes:
+                        
+                        state_copy: T = state.model_copy(deep=True)
+                        result_states.append(state_copy)
+
+                        tg.create_task(task(state_copy, shared))
+
+                state = await self.merge_states(state, result_states)
+
+                current_nodes = next_nodes
 
 
-        # Debug hooks
-        for h in self.hooks: await h.on_graph_end(state, shared)
+                # Hook
+                for h in self.hooks: await h.on_step_end(state, shared, next_nodes)
 
 
-        return state, shared
+            # Hook
+            for h in self.hooks: await h.on_graph_end(state, shared)
+
+
+            return state, shared
+        
+        
+        except Exception as e:
+            
+            # Hook
+            for h in self.hooks:
+                e = await h.on_error(e, state, shared)
+                if e is None: 
+                    break
+            
+            if e:
+                raise e
+
+
     
 
 
@@ -218,7 +254,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
             changes_list.append(Diff.recursive_diff(current_dict, result_dict))
         
 
-        # Debug hooks
+        # Hook
         for h in self.hooks: await h.on_merge_start(current_state, result_states, changes_list)
 
 
@@ -226,7 +262,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
         if conflicts:
 
-            # Debug hooks
+            # Hook
             for h in self.hooks: await h.on_merge_conflict(current_state, result_states, changes_list, conflicts)
 
             raise ChangeConflictException(f"Conflicts detected after parallel execution: {conflicts}")
@@ -238,7 +274,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         state: T = state_class.model_validate(current_dict)
 
 
-        # Debug hooks
+        # Hook
         for h in self.hooks: await h.on_merge_end(current_state, result_states, changes_list, state)
 
         return state

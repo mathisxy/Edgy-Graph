@@ -113,6 +113,20 @@ class GraphHook[T: State, S: Shared](ABC):
         pass
 
 
+    async def on_error(self, error: Exception, state: T, shared: S) -> Exception | None:
+        """
+        Called when an error occurs during the graph execution.
+
+        Args:
+            error: The error that occurred.
+
+        Returns:
+           The error to raise, or None not to raise an error.
+        """
+
+        return error
+
+
 
 class InteractiveDebugHook[T: State, S: Shared](GraphHook[T, S]):
     """
