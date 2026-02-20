@@ -149,7 +149,7 @@ class InteractiveDebugHook[T: State, S: Shared](GraphHook[T, S]):
     async def on_graph_start(self, state: T, shared: S):
         self.console.print(Rule("[bold magenta]Graph Execution Started", style="magenta"))
         
-        # Nebeneinanderstellung von State und Shared
+        # State and Shared side by side
         state_view = Panel(Pretty(state), title="Initial State", border_style="blue")
         shared_view = Panel(Pretty(shared), title="Initial Shared", border_style="cyan")
         

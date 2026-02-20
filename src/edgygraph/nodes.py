@@ -11,6 +11,9 @@ class Node[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol]
 
     The node must implement the `__call__` method to run the node.
     """
+
+    cancel_other_on_finish: bool = False
+
     
     @abstractmethod
     async def __call__(self, state: T, shared: S) -> None:
