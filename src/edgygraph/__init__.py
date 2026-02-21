@@ -1,7 +1,7 @@
 # from .edges import Edge, START, END
 from .nodes import START, END, Node
 from .states import State, Shared, StateProtocol, SharedProtocol, StateAttribute, SharedAttribute, Stream
-from .graphs import Graph, Properties
+from .graphs import Graph, Config, ErrorConfig
 from .graph_hooks import GraphHook, InteractiveDebugHook
 
 __all__ = [
@@ -14,7 +14,8 @@ __all__ = [
     "SharedAttribute",
     "Stream",
     "Graph",
-    "Properties",
+    "Config",
+    "ErrorConfig",
     "START",
     "END",
     "GraphHook",

@@ -1,28 +1,26 @@
-from .nodes import START, END, Node
-from .states import StateProtocol as State, SharedProtocol as Shared
-from .graph_hooks import GraphHook
-from .diff import Change, ChangeConflictException, Diff
 
-from typing import Tuple, Callable, Awaitable, cast, Any
+from typing import Tuple, cast, Any, Sequence
 from collections import defaultdict
 from collections.abc import Hashable
 import asyncio
 from pydantic import BaseModel, ConfigDict, Field
-import inspect
+
+from .nodes import START, Node
+from .states import StateProtocol as State, SharedProtocol as Shared
+from .graph_hooks import GraphHook
+from .diff import Change, ChangeConflictException, Diff
+from .types import  \
+    Edge, ErrorEdge, \
+    SingleSource, SingleErrorSource, \
+    Config, ErrorConfig, \
+    Entry, ErrorEntry, Entries, \
+    NextNode
+
+    
+    
 
 
-class Properties(BaseModel):
 
-    instant: bool = False
-
-type SingleSource[T: State, S: Shared] = Node[T, S] | type[START]
-type Source[T: State, S: Shared] = SingleSource[T, S] | list[SingleSource[T, S]] | type[Exception] | tuple[Node[T, S], type[Exception]] | tuple[list[Node[T, S]], type[Exception]]
-type SingleNext[T: State, S: Shared] = Node[T, S] | type[END] | None
-type Next[T: State, S: Shared] = SingleNext[T, S] | list[SingleNext[T, S]] | Callable[[T, S], SingleNext[T, S] | list[SingleNext[T, S]] | Awaitable[SingleNext[T, S] | list[SingleNext[T, S]]]]
-type Edge[T: State, S: Shared] = tuple[Source[T, S], Next[T, S]] | tuple[Source[T, S], Next[T, S], Properties]
-
-type EdgeIndex[T: State, S: Shared] = SingleSource[T, S]
-type ErrorEdgeIndex[T: State, S: Shared] = type[Exception] | tuple[Node[T, S], type[Exception]]
 
 class Graph[T: State = State, S: Shared = Shared](BaseModel):
     """
@@ -42,70 +40,59 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    edges: list[Edge[T, S]] = Field(default_factory=list[Edge[T, S]])
-    # instant_edges: list[Edge[T, S]] = Field(default_factory=list[Edge[T, S]])
+    edges: Sequence[Edge[T, S] | ErrorEdge[T, S]] = Field(default_factory=list[Edge[T, S] | ErrorEdge[T, S]])
+    hooks: Sequence[GraphHook[T, S]] = Field(default_factory=list[GraphHook[T, S]], exclude=True)
 
-    _edge_index: dict[EdgeIndex[T, S], list[Next[T, S]]] = defaultdict(list)
-    _instant_edge_index: dict[EdgeIndex[T, S], list[Next[T, S]]] = defaultdict(list)
-    _error_edge_index: dict[ErrorEdgeIndex[T, S], list[Next[T, S]]] = defaultdict(list)
-
-    hooks: list[GraphHook[T, S]] = Field(default_factory=list[GraphHook[T, S]], exclude=True)
+    edge_index: dict[SingleSource[T, S], list[Entry[T, S]]] = Field(default_factory=lambda: defaultdict(list), init=False)
+    error_edge_index: dict[SingleErrorSource[T, S], list[ErrorEntry[T, S]]] = Field(default_factory=lambda: defaultdict(list), init=False)
 
 
     def model_post_init(self, _) -> None:
         """
-        Index the edges by source node
+        Index the edges after the model is initialized.
         """
 
-        self.index_edges(self.edges)
+        self.index_edges()
 
         
 
-    def index_edges(self, edges: list[Edge[T, S]]) -> None:
+    def index_edges(self) -> None:
         """
-        Index the edges by source node.
+        Index the edges by single source.
 
         Append the edges to
-            - `_edge_index` if the edge has instant set to False in properties (default value)
-            - `_instant_edge_index` if the edge has instant set to True in properties
-            - `_error_edge_index` if the edge is an error edge with `type[Exception]` or `tuple[Node[T, S], type[Exception]]` as source
-
-        Args:
-           edges: The edges to index
+        - `edge_index` if the edge is a normal edge
+        - `error_edge_index` if the edge is an error edge
         """
 
-        for edge in edges:
+        for i, edge in enumerate(self.edges):
 
             match edge:
-                case (source, next, properties): pass
-                case (source, next): properties = Properties()
+                case (source, next, config): pass
+                case (source, next): config = Config() if source is START or isinstance(source, (Node, list)) else ErrorConfig()
                 case _: raise ValueError(f"Invalid edge format: {edge}")
                 
-
             if (isinstance(source, type) and issubclass(source, Exception)): # Error edge
-
-                self._error_edge_index[source].append(next)
+                assert isinstance(config, ErrorConfig), f"Unexpected properties type for error edge: {config}"
+                self.error_edge_index[source].append(ErrorEntry[T, S](next=next, config=config, index=i))
 
             elif isinstance(source, tuple): # Error edge with nodes
-
+                assert isinstance(config, ErrorConfig), f"Unexpected properties type for error edge: {config}"
                 nodes = source[0] if isinstance(source[0], list) else [source[0]]
                 et = source[1]
 
                 for node in nodes:
-                    self._error_edge_index[(node, et)].append(next)
+                    self.error_edge_index[(node, et)].append(ErrorEntry[T, S](next=next, config=config, index=i))
 
             elif isinstance(source, list): # Multiple sources
+                assert isinstance(config, Config), f"Unexpected properties type for node edge: {config}"
+
                 for s in source:
-                    if properties.instant:
-                        self._instant_edge_index[s].append(next)
-                    else:
-                        self._edge_index[s].append(next)
+                    self.edge_index[s].append(Entry[T, S](next=next, config=config, index=i))
 
             elif isinstance(source, Node) or source is START: # Single source
-                if properties.instant:
-                    self._instant_edge_index[source].append(next)
-                else:
-                    self._edge_index[source].append(next)
+                assert isinstance(config, Config), f"Unexpected properties type for node edge: {config}"
+                self.edge_index[source].append(Entry[T, S](next=next, config=config, index=i))
 
             else:
                 raise ValueError(f"Invalid edge source: {edge[0]}")
@@ -130,7 +117,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
             for h in self.hooks: await h.on_graph_start(state, shared)
 
             
-            next_nodes: list[Node[T, S]] = await self.get_next_nodes(state, shared, [START])
+            next_nodes: list[NextNode[T, S]] = await self.get_next(state, shared, START)
 
 
             while True:
@@ -142,31 +129,30 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
                     break # END
 
                 # Run parallel
-                tasks: list[asyncio.Task[Any]] = []
-                cancel: asyncio.Event = asyncio.Event()
                 result_states: list[T] = []
 
                 try:
 
                     async with asyncio.TaskGroup() as tg:
-                        for task in next_nodes:
+                        for node in next_nodes:
                             
                             state_copy: T = state.model_copy(deep=True)
                             result_states.append(state_copy)
 
-                            tg.create_task(self.task_wrapper(state_copy, shared, task))
+                            tg.create_task(self.node_wrapper(state_copy, shared, node))
 
                     state = await self.merge_states(state, result_states)
 
 
                 except ExceptionGroup as eg:
 
+                    print("ERROR")
                     print(eg)
 
                     # Hook
                     for h in self.hooks: await h.on_step_end(state, shared, next_nodes)
                     
-                    next_nodes = await self.get_next_nodes_from_error(state, shared, eg)
+                    next_nodes = await self.get_next_from_error(state, shared, eg)
 
                     print(next_nodes)
                     
@@ -175,7 +161,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
                     # Hook
                     for h in self.hooks: await h.on_step_end(state, shared, next_nodes)
 
-                    next_nodes = await self.get_next_nodes(state, shared, next_nodes)
+                    next_nodes = await self.get_next(state, shared, next_nodes)
 
 
             # Hook
@@ -199,7 +185,7 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
             return state, shared
 
 
-    async def task_wrapper(self, state: T, shared: S, task: Node[T, S], cancel: asyncio.Event | None = None):
+    async def node_wrapper(self, state: T, shared: S, node: NextNode[T, S]):
         """
         Wrapper for the nodes to catch exceptions and add the node to the exception with the key: `source_node`.
         
@@ -209,22 +195,19 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         Args:
             state: The state of the graph.
             shared: The shared state of the graph.
-            task: The node to execute.
+            node: The node to execute.
         """
 
         try:
-            await task(state, shared)
+            await node.node(state, shared)
 
-            if cancel:
-                cancel.set()
-
-        except Exception as err:
-            err.source_node = task # type: ignore
-            raise err
+        except Exception as e:
+            e.source_node = node # type: ignore
+            raise e
         
 
     
-    async def get_next_nodes_from_error(self, state: T, shared: S, eg: ExceptionGroup) -> list[Node[T, S]]:
+    async def get_next_from_error(self, state: T, shared: S, eg: ExceptionGroup) -> list[NextNode[T, S]]:
         """
         Get the next nodes to execute from the error.
 
@@ -239,30 +222,36 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
             The next nodes to execute.
         """
 
-        next_nodes: list[Node[T, S]] = []
+        next_nodes: list[NextNode[T, S]] = []
         unhandled: list[Exception] = []
 
         for e in eg.exceptions:
 
             print(e)
 
-            source_node: Node[T, S] | None = getattr(e, "source_node", None)
+            source_node: NextNode[T, S] | None = getattr(e, "source_node", None)
 
-            if not isinstance(source_node, Node):
+            if not isinstance(source_node, NextNode):
                 unhandled.append(e)
                 continue
 
-            for key in self._error_edge_index.keys():
-                
-                if isinstance(key, type) and issubclass(type(e), key): # Error matches the key
-                    next_nodes.extend(
-                        await self.resolve_next_types(state, shared, self._error_edge_index[key])
-                    )
+            entries: list[ErrorEntry[T, S]] = []
 
-                elif isinstance(key, tuple) and key[0] == source_node and issubclass(type(e), key[1]): # (Node, Error) matches the key
-                    next_nodes.extend(
-                        await self.resolve_next_types(state, shared, self._error_edge_index[key])
-                    )
+            for key in self.error_edge_index.keys():
+                
+                if self.match_error(e, key, source_node):
+                    entries.extend(self.error_edge_index[key])
+
+            entries.sort(key=lambda x: x.index)
+            for entry in entries:
+                if entry.index > source_node.reached_by.index: # If the error entry is after the node that raised the error
+                    next_nodes.extend(await entry(state, shared))
+                    print(entry)
+                    if not entry.config.propagate:
+                        break
+            else: # Not consumed
+                unhandled.append(e)
+
         
         if unhandled:
             raise ExceptionGroup("Unhandled node exceptions", unhandled)
@@ -270,100 +259,76 @@ class Graph[T: State = State, S: Shared = Shared](BaseModel):
         return next_nodes
 
 
+    def match_error(self, e: Exception, source: SingleErrorSource[T, S], source_node: NextNode[T, S]) -> bool:
 
-    async def get_next_nodes(self, state: T, shared: S, current_nodes: list[Node[T, S]] | list[SingleSource[T, S]]) -> list[Node[T, S]]:
+        match source:
+            case type(): # Exception type
+                return issubclass(type(e), source)
+            case (node, error_type): # (Node, Exception type)
+                return node == source_node.node and isinstance(e, error_type)
+
+
+    async def get_next(self, state: T, shared: S, current_nodes: Sequence[NextNode[T, S]] | type[START]) -> list[NextNode[T, S]]:
         """
+        Get the next nodes to run based on the current nodes and the graph's edges.
+
+        Callable edges are called with the state and shared state.
+
         Args:
             state: The current state
             shared: The shared state
             current_nodes: The current nodes
 
         Returns:
-           The list of the next nodes to run based on the current nodes and edges.
-           If an edge is a callable, it will be called with the current state and shared state.
+           The list of the next nodes including their edges that they were reached by.
         """
 
 
-        next_nodes: list[Node[T, S]] = []
+        next_list: list[NextNode[T, S]] = []
 
-
-        # Regular nodes
-        for current_node in current_nodes:
-
-            # Find the edge corresponding to the current node
-            next_nodes.extend(
-                await self.resolve_next_types(state, shared, 
-                    self._edge_index[current_node]
-                )
+        if isinstance(current_nodes, type): # START
+            next_list.extend(
+                await self.resolve_entries(state, shared, self.edge_index[START])
             )
+
+        else: # Regular nodes
+            for current_node in current_nodes:
+
+                # Find the edge corresponding to the current node
+                next_list.extend(
+                    await self.resolve_entries(state, shared, self.edge_index[current_node.node])
+                )
 
 
         # Instant nodes
-        current_instant_nodes: list[Node[T, S]] = next_nodes.copy()
+        current_instant_next_list: list[NextNode[T, S]] = []
 
         while True:
 
-            current_next_types = [
-                next
-                for node in current_instant_nodes 
-                for next in self._instant_edge_index[node]
+            current_entries = [
+                entry
+                for next in current_instant_next_list 
+                for entry in self.edge_index[next.node]
+                if entry.config.instant
             ]
             
-            if not current_next_types:
+            if not current_entries:
                 break
             
-            current_instant_nodes = await self.resolve_next_types(state, shared, current_next_types)
-            next_nodes.extend(current_instant_nodes)
+            current_instant_next_list = await self.resolve_entries(state, shared, current_entries)
+            next_list.extend(current_instant_next_list)
 
 
-        return next_nodes
-
-    
-
-    async def resolve_next_types(self, state: T, shared: S, next_types: list[Next[T, S]]) -> list[Node[T, S]]:
-        """
-        Resolve the next types to nodes.
-    
-        Args:
-            state: The current state.
-            shared: The shared state.
-            next_types: The next types to resolve.
-        
-        Returns:
-            The resolved nodes.
-        """
+        return next_list
 
 
-        next_nodes: list[Node[T, S]] = []
-        for next in next_types:
+    async def resolve_entries(self, state: T, shared: S, entries: Sequence[Entries[T, S]]) -> list[NextNode[T, S]]:
 
-            match next:
-
-                case None:
-                    pass # END
-
-                case type():
-                    assert next is END, "Only END is allowed as a type here"
-                
-                case Node():
-                    next_nodes.append(next)
-
-                case list():
-                    for n in next:
-                        if isinstance(n, Node):
-                            next_nodes.append(n)
-
-                case Callable():
-                    res = next(state, shared)
-                    if inspect.isawaitable(res):
-                        res = await res # for awaitables
-                    
-                    if isinstance(res, Node):
-                        next_nodes.append(res)
-
-        
-        return next_nodes
-
+        return [
+            next_node
+            for entry in entries
+            for next_node in await entry(state, shared)
+        ]
 
 
     async def merge_states(self, current_state: T, result_states: list[T]) -> T:

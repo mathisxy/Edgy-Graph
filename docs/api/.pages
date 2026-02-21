@@ -2,6 +2,7 @@ nav:
     - Graph: graphs.md
     - Nodes: nodes.md
     - States: states.md
-    - Graph Hooks: graph_hooks.md
+    - Types: types.md
     - Diff: diff.md
+    - Graph Hooks: graph_hooks.md
     - Repr. Mixin: rich.md

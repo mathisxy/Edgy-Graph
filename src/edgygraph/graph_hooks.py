@@ -1,9 +1,9 @@
 from abc import ABC
 from collections.abc import Hashable
 
-from .nodes import Node
 from .states import StateProtocol as State, SharedProtocol as Shared
 from .diff import Change, ChangeTypes
+from .types import NextNode
 
 from rich.console import Console
 from rich.panel import Panel
@@ -34,7 +34,7 @@ class GraphHook[T: State, S: Shared](ABC):
         pass
 
 
-    async def on_step_start(self, state: T, shared: S, nodes: list[Node[T, S]]) -> None:
+    async def on_step_start(self, state: T, shared: S, nodes: list[NextNode[T, S]]) -> None:
         """
         Called when a step starts.
 
@@ -47,7 +47,7 @@ class GraphHook[T: State, S: Shared](ABC):
         pass
 
 
-    async def on_step_end(self, state: T, shared: S, nodes: list[Node[T, S]]) -> None:
+    async def on_step_end(self, state: T, shared: S, nodes: list[NextNode[T, S]]) -> None:
         """
         Called when a step ends.
 
@@ -89,7 +89,7 @@ class GraphHook[T: State, S: Shared](ABC):
         pass
 
 
-    async def on_merge_end(self, state: T, result_states: list[T], changes: list[dict[tuple[Hashable, ...], "Change"]], merged_state: T) -> None:
+    async def on_merge_end(self, state: T, result_states: list[T], changes: list[dict[tuple[Hashable, ...], Change]], merged_state: T) -> None:
         """
         Called when the merge process ends.
         
@@ -156,11 +156,11 @@ class InteractiveDebugHook[T: State, S: Shared](GraphHook[T, S]):
         self.console.print(Columns([state_view, shared_view]))
         self._pause()
 
-    async def on_step_start(self, state: T, shared: S, nodes: list[Node[T, S]]):
+    async def on_step_start(self, state: T, shared: S, nodes: list[NextNode[T, S]]):
         # Tree-Ansicht für die anstehenden Nodes
         node_tree = Tree("[bold yellow]Next Step Nodes")
         for node in nodes:
-            node_tree.add(f"[green]{node.__class__.__name__}[/green]")
+            node_tree.add(f"[green]{node.node.__class__.__name__}[/green]")
 
         self.console.print(Panel(
             node_tree,
@@ -231,9 +231,9 @@ class InteractiveDebugHook[T: State, S: Shared](GraphHook[T, S]):
         self._pause()
 
     
-    async def on_step_end(self, state: T, shared: S, nodes: list[Node[T, S]]):
+    async def on_step_end(self, state: T, shared: S, nodes: list[NextNode[T, S]]):
         # Header für den abgeschlossenen Schritt
-        node_names = ", ".join([n.__class__.__name__ for n in nodes])
+        node_names = ", ".join([n.node.__class__.__name__ for n in nodes])
         self.console.print(Rule(f"[bold blue]Step Completed: {node_names}", style="blue"))
 
         # Erstellung einer Vergleichstabelle für State und Shared
