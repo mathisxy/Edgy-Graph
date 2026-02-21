@@ -15,13 +15,14 @@ A community collection of nodes will be available [here](https://www.github.com/
 ## Overview
 
 - **Pydantic Typing**: <br> Built on Pydantic and Generics for complete static type safety.
-- **Inheritance and Variance**: <br> Easily extend and specialize state and node classes.
+- **Inheritance or Protocols**: <br> Easily extend and specialize state and node classes.
 - **Parallel Task Processing**: <br> Multiple nodes can run simultaneously
 - **Dual State Management**:
     - State with automatic change extraction and conflict detection
     - Shared state accessible by all nodes, protected via explicit locking
 - **Flexible Routing**: <br> Define simple node-to-node edges or dynamic routing based on functions.
 - **Streaming**: <br> A standardized interface for streaming data between nodes.
+- **Hooks Interface**: <br> Customizability and predefined interactive step-by-step debugging class.
 
 ## Installation
 
