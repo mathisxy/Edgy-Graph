@@ -1,3 +1,3 @@
 - [ ] Graph visualization
-- [ ] Debug mode with node by node execution
-- [ ] Error handling system
+- [x] Debug mode with node by node execution
+- [x] Error handling system

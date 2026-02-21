@@ -4,23 +4,26 @@
 [![Downloads](https://img.shields.io/pypi/dm/edgygraph)](https://pypi.org/project/edgygraph/#files)
 [![Issues](https://img.shields.io/github/issues/mathisxy/edgygraph)](https://github.com/mathisxy/edgygraph/issues)
 [![Type Check](https://github.com/mathisxy/edgygraph/actions/workflows/typecheck.yml/badge.svg?branch=main)](https://github.com/mathisxy/Edgy-Graph/actions/workflows/typecheck.yml)
+[![Tests](https://github.com/mathisxy/edgygraph/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/mathisxy/Edgy-Graph/actions/workflows/tests.yml)
 [![Deploy Docs](https://github.com/mathisxy/edgygraph/actions/workflows/docs.yml/badge.svg)](https://github.com/mathisxy/Edgy-Graph/actions/workflows/docs.yml)
 [![Documentation](https://img.shields.io/badge/Docs-GitHub%20Pages-blue)](https://mathisxy.github.io/edgygraph/)
 
-A **pydantically** typed, lightweight **graph framework** for Python that combines features from [Langgraph](https://github.com/langchain-ai/langgraph) with **static type security**.
+A **pydantically** typed, lightweight **graph framework** for Python that combines features from [Langgraph](https://github.com/langchain-ai/langgraph) with **static type safety**.
 
 A community collection of nodes will be available [here](https://www.github.com/mathisxy/edgynodes/).
 
 ## Overview
 
-- **Pydantic Typing**: <br> Built on Pydantic and Generics for complete static type safety.
-- **Inheritance and Variance**: <br> Easily extend and specialize state and node classes.
+- **Pydantic Typing**: <br> Built on Pydantic and Generics for 100% strict static type safety.
+- **Inheritance or Protocols**: <br> Extend, specialize and join state and node classes.
 - **Parallel Task Processing**: <br> Multiple nodes can run simultaneously
 - **Dual State Management**:
     - State with automatic change extraction and conflict detection
     - Shared state accessible by all nodes, protected via explicit locking
 - **Flexible Routing**: <br> Define simple node-to-node edges or dynamic routing based on functions.
 - **Streaming**: <br> A standardized interface for streaming data between nodes.
+- **Hooks Interface**: <br> Customizability and predefined interactive step-by-step debugging class.
+- **Error Edges**: <br> Configure node error handling in the graph.
 
 ## Installation
 
