@@ -9,7 +9,7 @@ from rich.rule import Rule
 from rich.tree import Tree
 
 from ...diff import Change, ChangeTypes
-from ...types import NextNode
+from ...graph.types import NextNode
 from ...states import StateProtocol as State, SharedProtocol as Shared
 
 

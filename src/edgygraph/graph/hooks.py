@@ -1,12 +1,13 @@
 from abc import ABC
 from collections.abc import Hashable
 
-from .states import StateProtocol as State, SharedProtocol as Shared
-from .diff import Change
+from ..states import StateProtocol, SharedProtocol
+from ..diff import Change
 from .types import NextNode
 
 
-class GraphHook[T: State, S: Shared](ABC):
+
+class GraphHook[T: StateProtocol, S: SharedProtocol](ABC):
     """
     Hook for the graph execution.
 
@@ -54,7 +55,7 @@ class GraphHook[T: State, S: Shared](ABC):
         pass
 
 
-    async def on_merge_start(self, state: T, result_states: list[T], changes: list[dict[tuple[Hashable, ...], "Change"]]) -> None:
+    async def on_merge_start(self, state: T, result_states: list[T], changes: list[dict[tuple[Hashable, ...], Change]]) -> None:
         """
         Called when the merge process starts.
         
@@ -67,7 +68,7 @@ class GraphHook[T: State, S: Shared](ABC):
         pass
 
 
-    async def on_merge_conflict(self, state: T, result_states: list[T], changes: list[dict[tuple[Hashable, ...], Change]], conflicts: dict[tuple[Hashable, ...], list["Change"]]) -> None:
+    async def on_merge_conflict(self, state: T, result_states: list[T], changes: list[dict[tuple[Hashable, ...], Change]], conflicts: dict[tuple[Hashable, ...], list[Change]]) -> None:
         """
         Called when a merge conflict occurs.
         

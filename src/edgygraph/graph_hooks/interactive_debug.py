@@ -2,15 +2,15 @@ from collections.abc import Hashable
 
 from ..states import StateProtocol as State, SharedProtocol as Shared
 from ..diff import Change
-from ..types import NextNode
-from ..hooks import GraphHook
+from ..graph.types import NextNode
+from ..graph.hooks import GraphHook
 
 from collections.abc import Hashable
 
 from ..states import StateProtocol as State, SharedProtocol as Shared
 from ..diff import Change
-from ..types import NextNode
-from ..hooks import GraphHook
+from ..graph.types import NextNode
+from ..graph.hooks import GraphHook
 from .utils.rich_printing import GraphRenderer
 
 

@@ -1,32 +1,33 @@
 from __future__ import annotations
-
-from pydantic import BaseModel, ConfigDict, Field
 from typing import Callable, Awaitable, Any, TYPE_CHECKING
+from pydantic import BaseModel, ConfigDict, Field
 import inspect
 
-from .nodes import Node, END, START
-from .states import StateProtocol as State, SharedProtocol as Shared
+from ..states import StateProtocol, SharedProtocol
+from ..nodes import Node, START, END
 
 if TYPE_CHECKING:
-    from .graphs import Branch, Graph
+    from .graphs import Graph
+    from .branches import Branch
 
 
-type NodeTupel[T: State, S: Shared] = tuple[Source[T, S], *tuple[Node[T, S], ...]] | tuple[Source[T, S], *tuple[Node[T, S], ...], Next[T, S]]
 
-type SingleSource[T: State, S: Shared] = Node[T, S] | type[START]
-type Source[T: State, S: Shared] = SingleSource[T, S] | list[SingleSource[T, S]]
+type NodeTupel[T: StateProtocol, S: SharedProtocol] = tuple[Source[T, S], *tuple[Node[T, S], ...]] | tuple[Source[T, S], *tuple[Node[T, S], ...], Next[T, S]]
 
-type SingleErrorSource[T: State, S: Shared] = type[Exception] | tuple[Node[T, S], type[Exception]]
-type ErrorSource[T: State, S: Shared] = SingleErrorSource[T, S] | tuple[list[Node[T, S]], type[Exception]]
+type SingleSource[T: StateProtocol, S: SharedProtocol] = Node[T, S] | type[START]
+type Source[T: StateProtocol, S: SharedProtocol] = SingleSource[T, S] | list[SingleSource[T, S]]
 
-type SingleNext[T: State, S: Shared] = Node[T, S] | type[END] | None
-type BranchNext[T: State, S: Shared] = tuple[list[Edge[T, S]], SingleNext[T, S]]
-type ResolvedNext[T: State, S: Shared] = SingleNext[T, S] | list[SingleNext[T, S]] | BranchNext[T, S]
-type Next[T: State, S: Shared] = ResolvedNext[T, S] | Callable[[T, S], ResolvedNext[T, S]] | Callable[[T, S], Awaitable[ResolvedNext[T, S]]]
+type SingleErrorSource[T: StateProtocol, S: SharedProtocol] = type[Exception] | tuple[Node[T, S], type[Exception]]
+type ErrorSource[T: StateProtocol, S: SharedProtocol] = SingleErrorSource[T, S] | tuple[list[Node[T, S]], type[Exception]]
+
+type SingleNext[T: StateProtocol, S: SharedProtocol] = Node[T, S] | type[END] | None
+type BranchNext[T: StateProtocol, S: SharedProtocol] = tuple[list[Edge[T, S]], SingleNext[T, S]]
+type ResolvedNext[T: StateProtocol, S: SharedProtocol] = SingleNext[T, S] | list[SingleNext[T, S]] | BranchNext[T, S]
+type Next[T: StateProtocol, S: SharedProtocol] = ResolvedNext[T, S] | Callable[[T, S], ResolvedNext[T, S]] | Callable[[T, S], Awaitable[ResolvedNext[T, S]]]
 
 
-type Edge[T: State, S: Shared] = tuple[Source[T, S], Next[T, S]] | tuple[Source[T, S], Next[T, S], Config]
-type ErrorEdge[T: State, S: Shared] = tuple[ErrorSource[T, S], Next[T, S]] | tuple[ErrorSource[T, S], Next[T, S], ErrorConfig]
+type Edge[T: StateProtocol, S: SharedProtocol] = tuple[Source[T, S], Next[T, S]] | tuple[Source[T, S], Next[T, S], Config]
+type ErrorEdge[T: StateProtocol, S: SharedProtocol] = tuple[ErrorSource[T, S], Next[T, S]] | tuple[ErrorSource[T, S], Next[T, S], ErrorConfig]
 
 
 def is_node_tupel(edge: tuple[Any, ...]) -> bool:
@@ -94,7 +95,7 @@ class ErrorConfig(BaseModel):
     propagate: bool = False
 
 
-class BaseEntry[T: State, S: Shared](BaseModel):
+class BaseEntry[T: StateProtocol, S: SharedProtocol](BaseModel):
     """
     Base class for the values of edge indexing dictionaries of the graph.
 
@@ -127,6 +128,7 @@ class BaseEntry[T: State, S: Shared](BaseModel):
             The resolved nodes.
         """
 
+        from .branches import Branch
 
         next_nodes: list[NextNode[T, S] | Branch[T, S]] = []
         next = self.next
@@ -164,7 +166,7 @@ class BaseEntry[T: State, S: Shared](BaseModel):
         return next_nodes
 
 
-class Entry[T: State, S: Shared](BaseEntry[T, S]):
+class Entry[T: StateProtocol, S: SharedProtocol](BaseEntry[T, S]):
     """
     A value of the edge indexing dictionary of the graph.
 
@@ -176,7 +178,7 @@ class Entry[T: State, S: Shared](BaseEntry[T, S]):
 
     config: Config = Field(default_factory=Config)
 
-class ErrorEntry[T: State, S: Shared](BaseEntry[T, S]):
+class ErrorEntry[T: StateProtocol, S: SharedProtocol](BaseEntry[T, S]):
     """
     A value of the error edge indexing dictionary of the graph.
 
@@ -189,10 +191,10 @@ class ErrorEntry[T: State, S: Shared](BaseEntry[T, S]):
     config: ErrorConfig = Field(default_factory=ErrorConfig)
 
 
-type Entries[T: State, S: Shared] = Entry[T, S] | ErrorEntry[T, S]
+type Entries[T: StateProtocol, S: SharedProtocol] = Entry[T, S] | ErrorEntry[T, S]
 
 
-class NextNode[T: State, S: Shared](BaseModel):
+class NextNode[T: StateProtocol, S: SharedProtocol](BaseModel):
     """
     A node that is the target of an edge.
 
@@ -204,5 +206,3 @@ class NextNode[T: State, S: Shared](BaseModel):
     node: Node[T, S]
     reached_by: Entries[T, S]
     model_config = ConfigDict(arbitrary_types_allowed=True)
-
-
