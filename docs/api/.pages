@@ -1,5 +1,5 @@
 nav:
-    - Graph: graphs.md
+    - Graph: graph
     - Nodes: nodes.md
     - States: states.md
     - Types: types.md
