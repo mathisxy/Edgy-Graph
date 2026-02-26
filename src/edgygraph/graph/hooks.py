@@ -74,7 +74,6 @@ class GraphHook[T: StateProtocol, S: SharedProtocol](ABC):
         
         Args:
             state: The old state of the graph.
-            result_states: The result states of the nodes.
             changes: The changes that will be applied to the state.
             conflicts: The conflicts that occurred during the merge process.
         """

@@ -11,9 +11,14 @@ from .types import NodeTupel, Edge, ErrorEdge, SingleNext, Entry, ErrorEntry, Si
 
 
 class Branch[T: StateProtocol, S: SharedProtocol]:
-
     """
     A branch of the graph.
+
+
+    Args:
+        edges: The edges of the branch.
+        join: The node to join the branch after execution. If None the branch will not be joined.
+
     """
     
     edges: Sequence[Edge[T, S] | ErrorEdge[T, S] | NodeTupel[T, S]]

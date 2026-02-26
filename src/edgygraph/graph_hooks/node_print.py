@@ -5,7 +5,10 @@ from .utils.rich_printing import GraphRenderer
 
 class NodePrintHook[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol](GraphHook[T, S]):
     """
-    A hook that prints the node name at each step of the graph execution.
+    A hook that prints the execiting nodes before and after execution in each branch.
+
+    Args:
+        renderer: The GraphRenderer to use for printing the nodes. If not provided, the default renderer will be used.
     """
 
     def __init__(self, renderer: GraphRenderer[T, S] | None = None) -> None:
