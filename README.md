@@ -77,7 +77,7 @@ node = MyNode()
 
 ```python
 Graph[MyState, Shared](
-    edges=[
+    edges=[(
         (
             START,
             node
@@ -85,7 +85,7 @@ Graph[MyState, Shared](
         (
             node,
             END
-        )
+        ), END)
     ]
 )
 ```
