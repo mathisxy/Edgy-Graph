@@ -22,7 +22,7 @@ jobs:
 
       - name: Install documentation dependencies
         run: |
-          pip install .[docs]
+          pip install -e .[docs]
 
       - name: Build and deploy documentation
         run: mkdocs gh-deploy --force
