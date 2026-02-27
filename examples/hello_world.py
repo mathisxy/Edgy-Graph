@@ -37,10 +37,7 @@ graph = Graph[MyState, Shared](
             START,
             node
         ),
-        (
-            node,
-            END
-        ), END)
+        END)
     ]
 )
 

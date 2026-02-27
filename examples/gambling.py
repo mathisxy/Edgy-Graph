@@ -82,10 +82,7 @@ asyncio.run(Graph[GamblingState, Shared](
         (
             fail,
             guess
-        ),
-        (
-            win,
-            END
-        ), None)
-    ]
+        ), 
+        END
+    )]
 )(state, shared))
