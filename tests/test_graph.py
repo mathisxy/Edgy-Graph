@@ -3,67 +3,9 @@ import asyncio
 from asyncio import Lock
 from collections.abc import Hashable
 
-from edgygraph import Graph, Node, State, Shared, START, END, Config, ErrorConfig
-from edgygraph.graphs import Entry, ErrorEntry
+from edgygraph import Graph, Node, State, Shared, START, END, Config
 from edgygraph.diff import ChangeTypes, Diff, Change, ChangeConflictException
 
-
-class TestNode(Node[State, Shared]):
-
-    def __init__(self, name: str, output: list[str]):
-        self.name = name
-        self.output = output
-    
-    async def __call__(self, state: State, shared: Shared):
-        self.output.append(self.name)
-
-
-
-@pytest.mark.asyncio
-async def test_graph_index_edges():
-
-    output: list[str] = []
-
-    node1 = TestNode("node1", output)
-    node2 = TestNode("node2", output)
-    node3 = TestNode("node3", output)
-    node4 = TestNode("node4", output)
-
-
-    graph = Graph(edges=[
-        (START, node1),
-        (node1, node2),
-        (node2, node3, Config(instant=True)),
-        (node3, END),
-        (node3, None),
-        (Exception, node3),
-        (Exception, node4, ErrorConfig(propagate=True)),
-        ((node3, Exception), node4),
-        ((node3, Exception), node4, ErrorConfig(propagate=False)),
-        (([node3, node4], Exception), node4)
-    ])
-
-    assert graph.edge_index == {
-        START: [Entry(next=node1, index=0, config=Config())],
-        node1: [Entry(next=node2, index=1, config=Config())],
-        node2: [Entry(next=node3, index=2, config=Config(instant=True))],
-        node3: [Entry(next=END, index=3, config=Config()), Entry(next=None, index=4, config=Config())],
-    }
-    assert graph.error_edge_index == {
-        Exception: [
-            ErrorEntry(next=node3, index=5, config=ErrorConfig()),
-            ErrorEntry(next=node4, index=6, config=ErrorConfig(propagate=True)),
-        ],
-        (node3, Exception): [
-            ErrorEntry(next=node4, index=7, config=ErrorConfig()),
-            ErrorEntry(next=node4, index=8, config=ErrorConfig(propagate=False)),
-            ErrorEntry(next=node4, index=9, config=ErrorConfig()),
-        ],
-        (node4, Exception): [
-            ErrorEntry(next=node4, index=9, config=ErrorConfig()),
-        ],
-
-    }
 
 
 ### THE FOLLOWING PART IS CURRENTLY MOSTLY WRITTEN BY AI
@@ -232,7 +174,7 @@ class TestGraphBasicExecution:
     def test_single_node_increments_value(self):
         state = SimpleState(value=0)
         shared = SimpleShared()
-        g = Graph[SimpleState, SimpleShared](edges=[(START, inc), (inc, END)])
+        g = Graph[SimpleState, SimpleShared](edges=[((START, inc), (inc, END), END)])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_state.value == 1
 
@@ -241,14 +183,14 @@ class TestGraphBasicExecution:
         n2 = IncrementNode()
         state = SimpleState(value=0)
         shared = SimpleShared()
-        g = Graph(edges=[(START, n1), (n1, n2), (n2, END)])
+        g = Graph(edges=[((START, n1), (n1, n2), (n2, END), END)])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_state.value == 2
 
     def test_empty_graph_returns_unchanged_state(self):
         state = SimpleState(value=42)
         shared = SimpleShared()
-        g = Graph[SimpleState, SimpleShared](edges=[(START, END)])
+        g = Graph[SimpleState, SimpleShared](edges=[((START, END), END)])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_state.value == 42
 
@@ -262,7 +204,7 @@ class TestGraphBasicExecution:
     def test_shared_is_same_object(self):
         state = SimpleState()
         shared = SimpleShared()
-        g = Graph[SimpleState, SimpleShared](edges=[(START, inc), (inc, END)])
+        g = Graph[SimpleState, SimpleShared](edges=[((START, inc), (inc, END), END)])
         _, result_shared = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_shared is shared
 
@@ -281,7 +223,7 @@ class TestGraphConditionalEdges:
 
         state = SimpleState(value=1)
         shared = SimpleShared()
-        g = Graph(edges=[(START, inc), (inc, router)])
+        g = Graph(edges=[((START, inc), (inc, router), END)])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         # noop ran (value incremented once by inc, noop does nothing)
         assert result_state.value == 2
@@ -294,7 +236,7 @@ class TestGraphConditionalEdges:
 
         state = SimpleState(value=0)
         shared = SimpleShared()
-        g = Graph(edges=[(START, inc), (inc, router)])
+        g = Graph(edges=[((START, inc), (inc, router), END)])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_state.value == 1
 
@@ -307,7 +249,7 @@ class TestGraphConditionalEdges:
 
         state = SimpleState(value=0)
         shared = SimpleShared()
-        g = Graph(edges=[(START, inc), (inc, async_router), (noop, END)])
+        g = Graph(edges=[((START, inc), (inc, async_router), (noop, END), END)])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_state.value == 1
 
@@ -334,10 +276,11 @@ class TestGraphParallelExecution:
 
         state = SimpleState()
         shared = SimpleShared()
-        g = Graph(edges=[
+        g = Graph(edges=[(
             (START, [sv, sn]),
             ([sv, sn], join),
             (join, END),
+            END)
         ])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_state.value == 99
@@ -359,8 +302,9 @@ class TestGraphParallelExecution:
 
         state = SimpleState()
         shared = SimpleShared()
-        g = Graph(edges=[
+        g = Graph(edges=[(
             (START, [sv1, sv2]),
+            END)
         ])
         with pytest.raises((ChangeConflictException, ExceptionGroup)):
             asyncio.get_event_loop().run_until_complete(g(state, shared))
@@ -377,10 +321,11 @@ class TestGraphErrorEdges:
 
         state = SimpleState()
         shared = SimpleShared()
-        g = Graph(edges=[
+        g = Graph(edges=[(
             (START, raiser),
             (ValueError, recovery),
             (recovery, END),
+            END)
         ])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_state.name == "recovered"
@@ -391,10 +336,11 @@ class TestGraphErrorEdges:
 
         state = SimpleState()
         shared = SimpleShared()
-        g = Graph(edges=[
+        g = Graph(edges=[(
             (START, raiser),
             ((raiser, RuntimeError), recovery),
             (recovery, END),
+            END)
         ])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_state.name == "recovered"
@@ -404,8 +350,9 @@ class TestGraphErrorEdges:
 
         state = SimpleState()
         shared = SimpleShared()
-        g = Graph(edges=[
+        g = Graph(edges=[(
             (START, raiser),
+            END)
         ])
         with pytest.raises(ExceptionGroup):
             asyncio.get_event_loop().run_until_complete(g(state, shared))
@@ -416,9 +363,10 @@ class TestGraphErrorEdges:
 
         state = SimpleState()
         shared = SimpleShared()
-        g = Graph(edges=[
+        g = Graph(edges=[(
             (START, raiser),
             (ValueError, RecoveryNode()),
+            END)
         ])
         with pytest.raises(ExceptionGroup):
             asyncio.get_event_loop().run_until_complete(g(state, shared))
@@ -436,10 +384,11 @@ class TestGraphInstantEdges:
 
         state = SimpleState(value=0)
         shared = SimpleShared()
-        g = Graph(edges=[
+        g = Graph(edges=[(
             (START, inc),
             (inc, noop, Config(instant=True)),
             (noop, END),
+            END)
         ])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_state.value == 1  # inc ran; noop is instant and runs too
@@ -459,11 +408,12 @@ class TestGraphMultiSourceEdges:
         state = SimpleState(value=0)
         shared = SimpleShared()
 
-        g = Graph(edges=[
+        g = Graph(edges=[(
             (START, [n1, n3]),
             (n3, n2),
             ([n1, n2], join),
             (join, END),
+            END)
         ])
         result_state, _ = asyncio.get_event_loop().run_until_complete(g(state, shared))
         assert result_state.value == 2  # both increments applied

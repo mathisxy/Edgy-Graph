@@ -7,7 +7,7 @@ from ..states import StateProtocol, SharedProtocol
 from ..nodes import Node, START, END
 
 
-type NodeTupel[T: StateProtocol, S: SharedProtocol] = tuple[Source[T, S], *tuple[Node[T, S], ...]] | tuple[Source[T, S], *tuple[Node[T, S], ...], Next[T, S]]
+type NodeTupel[T: StateProtocol, S: SharedProtocol] = tuple[SingleSource[T, S], *tuple[Node[T, S], ...]] | tuple[SingleSource[T, S], *tuple[Node[T, S], ...], Next[T, S]]
 
 type SingleSource[T: StateProtocol, S: SharedProtocol] = Node[T, S] | type[START]
 type Source[T: StateProtocol, S: SharedProtocol] = SingleSource[T, S] | Sequence[SingleSource[T, S]]
@@ -30,7 +30,7 @@ class Types[T: StateProtocol, S: SharedProtocol]:
 
     @classmethod
     def is_node_tupel(cls, edge: tuple[Any, ...]) -> TypeGuard[NodeTupel[T, S]]:
-        return len(edge) >= 2 and (cls.is_source(edge[0]) and cls.is_only_node_tuple(edge[1:-1]) and cls.is_next(edge[-1]))
+        return len(edge) >= 2 and (cls.is_single_source(edge[0]) and cls.is_only_node_tuple(edge[1:-1]) and cls.is_next(edge[-1]))
 
     @classmethod
     def is_only_node_tuple(cls, edge: tuple[Any, ...]) -> TypeGuard[tuple[*tuple[T, S]]]:
