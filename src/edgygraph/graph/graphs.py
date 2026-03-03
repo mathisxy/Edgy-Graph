@@ -148,9 +148,6 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
             else:
                 raise ValueError(f"Invalid source type: {source}")
 
-            print(self.branch_registry)
-
-
     async def __call__(self, state: T, shared: S) -> tuple[T, S]:
         """
         Run the graph on the given state and shared state.
@@ -208,9 +205,6 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
             
             next_nodes: list[NextNode[T, S]] = await self.get_next(state, shared, branch.start, branch)
 
-            print("INITIAL NEXT:", next_nodes)
-
-
             while next_nodes:
 
                 # Hook
@@ -241,19 +235,18 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
 
                     print("ERROR")
                     print(eg)
-                    
-                    next_nodes = await self.get_next_from_error(state, shared, eg, branch)
-
-                    print(next_nodes)
-                    
-                else:
-
-                    next_nodes = await self.get_next(state, shared, [n.node for n in next_nodes], branch)
-
-                finally:
 
                     # Hook
                     for h in self.hooks: await h.on_step_end(state, shared, next_nodes)
+                    
+                    next_nodes = await self.get_next_from_error(state, shared, eg, branch)
+                    
+                else:
+
+                    # Hook
+                    for h in self.hooks: await h.on_step_end(state, shared, next_nodes)
+
+                    next_nodes = await self.get_next(state, shared, [n.node for n in next_nodes], branch)
         
 
         except Exception as e:
@@ -267,8 +260,6 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
             if e:
                 raise e
 
-        print(" --- BRANCH RESULT --- ")
-        
         branch.result.set_result(Diff.recursive_diff(initial_state.model_dump(), state.model_dump()))
 
         
@@ -438,19 +429,15 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
            The list of the next nodes including their edges that they were reached by.
         """
 
-        print(f"GET NEXT FOR CURRENT NODES: {current_nodes}")
-
         next_list: list[NextNode[T, S]] = []
 
         if Types[T, S].is_single_source_sequence(current_nodes):
-            print("IS SINGLE SOURCE SEQUENCE")
             for current_node in current_nodes:
                 next_list.extend(
                     await self.resolve_entries(state, shared, branch.edge_index[current_node])
                 )
 
         elif Types[T, S].is_single_source(current_nodes):
-            print("IS SINGLE SOURCE")
             next_list.extend(
                 await self.resolve_entries(state, shared, branch.edge_index[current_nodes])
             )
@@ -500,10 +487,9 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
         next_nodes: list[NextNode[T, S]] = []
         unhandled: list[Exception] = []
 
-        for e in eg.exceptions:
+        for e in eg.exceptions:            
 
             print(e)
-            
 
             source_node: NextNode[T, S] | None = getattr(e, "source_node", None)
 
@@ -525,7 +511,6 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
                         await self.resolve_entries(state, shared, [entry])
                     )
 
-                    print(entry)
                     if not entry.config.propagate:
                         break
             else: # Not consumed
@@ -549,9 +534,7 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
 
 
     async def resolve_entries(self, state: T, shared: S, entries: Sequence[Entries[T, S]]) -> list[NextNode[T, S]]:
-        
-        print(f"RESOLVE: {entries}")
-
+    
         return [
             next_node
             for entry in entries
@@ -573,20 +556,17 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
             The resolved nodes.
         """
 
-        print(f"RESOLVING: {entry}")
-
         next = entry.next
 
-
-
         if not Types[T, S].is_resolved_next(next):
-            print("CALLABLE")
+            if not Types[T, S].is_next(next):
+                raise ValueError(f"Invalid next type: {type(next)}")
+            
             next = cast(Callable[[T, S], ResolvedNext[T, S]], next)
             next = next(state, shared)
 
             if inspect.isawaitable(next):
                 next = await next
-
         
         return [
             NextNode[T, S](node=node, reached_by=entry)
@@ -604,22 +584,24 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
             match x:
 
                 case None:
-                    print("None")
                     pass
                 
                 case Node():
-                    print("Node")
                     next_nodes.append(x)
+
+                case _:
+                    raise ValueError(f"Invalid next type: {type(x)}")
 
         
         if Types[T, S].is_single_next_sequence(next):
-            print("Sequence")
             for x in next:
                 match(x)
 
         elif Types[T, S].is_single_next(next):
-            print("Single")
             match(next)
+
+        else:
+            raise ValueError(f"Invalid next type: {type(next)}")
 
         return next_nodes
                     

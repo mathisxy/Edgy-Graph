@@ -63,7 +63,6 @@ class Types[T: StateProtocol, S: SharedProtocol]:
     def is_single_next(cls, x: Any) -> TypeGuard[SingleNext[T, S]]:
         return (
             x is None or
-            x is END or
             isinstance(x, Node)
         )
 
