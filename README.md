@@ -76,7 +76,7 @@ node = MyNode()
 ### Create a Graph
 
 ```python
-Graph[MyState, Shared](
+graph = Graph[MyState, Shared](
     edges=[
         (
             START,
