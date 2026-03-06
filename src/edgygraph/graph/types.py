@@ -23,8 +23,8 @@ type Edge[T: StateProtocol, S: SharedProtocol] = tuple[Source[T, S], Next[T, S]]
 type ErrorEdge[T: StateProtocol, S: SharedProtocol] = tuple[ErrorSource[T, S], Next[T, S]] | tuple[ErrorSource[T, S], Next[T, S], ErrorConfig]
 
 type Join[T: StateProtocol, S: SharedProtocol] = Next[T, S] | type[END]
-type BranchContainer[T: StateProtocol, S: SharedProtocol] = tuple[Source[T, S], Next[T, S], *tuple[Edge[T, S] | ErrorEdge[T, S] | Node[T, S] | Next[T, S], ...], Join[T, S]]
-type SingleSourceBranchContainer[T: StateProtocol, S: SharedProtocol] = tuple[SingleSource[T, S], Next[T, S], *tuple[Edge[T, S] | ErrorEdge[T, S] | Node[T, S] | Next[T, S], ...], Join[T, S]]
+type BranchContainer[T: StateProtocol, S: SharedProtocol] = tuple[Source[T, S], Next[T, S], *tuple[Edge[T, S] | ErrorEdge[T, S] | Node[T, S] | SingleErrorSource[T, S] | Next[T, S], ...], Join[T, S]]
+type SingleSourceBranchContainer[T: StateProtocol, S: SharedProtocol] = tuple[SingleSource[T, S], Next[T, S], *tuple[Edge[T, S] | ErrorEdge[T, S] | Node[T, S] | SingleErrorSource[T, S] | Next[T, S], ...], Join[T, S]]
 
 
 class Types[T: StateProtocol, S: SharedProtocol]:
