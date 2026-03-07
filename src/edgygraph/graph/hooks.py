@@ -64,8 +64,9 @@ class GraphHook[T: StateProtocol, S: SharedProtocol](ABC):
             state: The state of the graph.
             shared: The shared state of the graph.
             branch: The branch to be spawned.
+            trigger: The node that spawned the branch.
             branch_registry: The branch registry of the graph.
-            source_node: The node that spawned the branch.
+            join_registry: The current join registry of the graph.
         """
 
         pass
@@ -79,8 +80,9 @@ class GraphHook[T: StateProtocol, S: SharedProtocol](ABC):
             state: The state of the graph.
             shared: The shared state of the graph.
             branch: The branch that was spawned.
-            branch_registry: The branch registry of the graph.
             trigger: The node that spawned the branch.
+            branch_registry: The branch registry of the graph.
+            join_registry: The current join registry of the graph.
         """
 
         pass

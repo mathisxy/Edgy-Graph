@@ -19,17 +19,17 @@ from .branches import Branch
 
 class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol]:
     """
-    Create and execute a graph defined by a list of edges
+    Create and execute a graph defined by a list of edges.
 
 
     ## Generic Typing
     The graph supports different state management strategies through generic parameters:
 
-    * **Simple Inheritance (Covariance):** Extend `State` and `Shared` classes. 
+    - **Simple Inheritance (Covariance):** Extend `State` and `Shared` classes. 
         Ideal for smaller projects with minimal boilerplate.
-    * **Protocol-based (Duck Typing):** Implement `StateProtocol` and `SharedProtocol`. 
+    - **Protocol-based (Duck Typing):** Implement `StateProtocol` and `SharedProtocol`. 
         Recommended for scalable projects where multiple state types are merged.
-    * **Disabled Type Checking:** Use `typing.Any` to bypass strict typing.
+    - **Disabled Type Checking:** Use `typing.Any` to bypass strict typing.
 
     ---
 
@@ -66,7 +66,7 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
 
     - **Internal (Step Sync)**
         Parallel executing nodes in branches are synchronized at each step.
-        The state is merged after each step.
+        All branch internal states are merged after each step.
 
     - **External (Branch Sync)**
         Branches are synchronized at the `join` point.
@@ -74,16 +74,18 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
 
     ### Spawning
     A branch is triggered **immediately before** its `Source` is executed in another branch.
-    * `START`: Initial execution point.
-    * `Node`: Spawns when a specific node is executed in another branch.
-    * `List[Node]`: Spawns when any node in the list is executed in another branch.
+    
+    - `START`: Initial execution point.
+    - `Node`: Spawns when a specific node is executed in another branch.
+    - `List[Node]`: Spawns when any node in the list is executed in another branch.
 
 
     ### Joining
     Joining synchronizes multiple branches before moving to the next step.
-    * `None`: No synchronization and no merge of the state.
-    * `END`: Joins all branches at the graph's conclusion to return the merged state.
-    * `Node`: Other branches wait until all branches targeting this node have arrived and then merge the states before executing the node.
+    
+    - `None`: No synchronization and no merge of the state.
+    - `END`: Joins all branches at the graph's conclusion to return the merged state.
+    - `Node`: Other branches wait until all branches targeting this node have arrived and then merge the states before executing the node.
 
     ---
 
@@ -97,8 +99,9 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
 
     ### Error Handling
     The `Exception` source can be used to create fallback paths:
-    * `Exception`: Catches any error in preceding nodes of the same branch.
-    * `(Exception, [node1, node2])`: Specifically handles errors occurring in `node1` or `node2`.
+    
+    - `Exception`: Catches any error in preceding nodes of the same branch.
+    - `(Exception, [node1, node2])`: Specifically handles errors occurring in `node1` or `node2`.
 
     Attributes:
         edges: A list of branches with compatible nodes that build the graph.

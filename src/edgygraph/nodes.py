@@ -43,9 +43,6 @@ class Node[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol]
         """
         Creates a copy of the node. This can be used when the same node is used multiple times in the graph.
 
-        Args:
-            node: The node to copy.
-
         Returns:
             A copy of the node.
         """
