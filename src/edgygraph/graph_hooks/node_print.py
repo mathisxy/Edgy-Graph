@@ -2,7 +2,7 @@ from edgygraph.graph.branches import Branch
 
 from ..graph.hooks import GraphHook
 from ..states import StateProtocol, SharedProtocol
-from ..graph.types import NextNode, SingleSource, Join
+from ..graph.types import NextNode, BranchJoin, SingleSource
 from .utils.rich_printing import GraphRenderer
 
 class NodePrintHook[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol](GraphHook[T, S]):
@@ -29,6 +29,6 @@ class NodePrintHook[T: StateProtocol = StateProtocol, S: SharedProtocol = Shared
     async def on_graph_end(self, state: T, shared: S) -> None:
         self.renderer.render_graph_end(state, shared)
 
-    async def on_spawn_branch_end(self, state: T, shared: S, branch: Branch[T, S], trigger: NextNode[T, S], branch_registry: dict[SingleSource[T, S], list[Branch[T, S]]], join_registry: dict[Join[T, S], list[Branch[T, S]]]):
+    async def on_spawn_branch_end(self, state: T, shared: S, branch: Branch[T, S], trigger: NextNode[T, S], branch_registry: dict[SingleSource[T, S], list[Branch[T, S]]], join_registry: dict[BranchJoin[T, S], list[Branch[T, S]]]):
         self.renderer.render_spawn_branch_end(branch, trigger)
         self.renderer.render_branch_overview(branch_registry, join_registry)

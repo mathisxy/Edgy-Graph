@@ -4,7 +4,7 @@ from collections.abc import Hashable
 from ..states import StateProtocol, SharedProtocol
 from ..diff import Change
 from .branches import Branch
-from .types import NextNode, SingleSource, Join
+from .types import BranchJoin, NextNode, SingleSource
 
 
 
@@ -56,7 +56,7 @@ class GraphHook[T: StateProtocol, S: SharedProtocol](ABC):
         pass
 
 
-    async def on_spawn_branch_start(self, state: T, shared: S, branch: Branch[T, S], trigger: NextNode[T, S], branch_registry: dict[SingleSource[T, S], list[Branch[T, S]]], join_registry: dict[Join[T, S], list[Branch[T, S]]]):
+    async def on_spawn_branch_start(self, state: T, shared: S, branch: Branch[T, S], trigger: NextNode[T, S], branch_registry: dict[SingleSource[T, S], list[Branch[T, S]]], join_registry: dict[BranchJoin[T, S], list[Branch[T, S]]]):
         """
         Called before a branch is spawned.
 
@@ -71,7 +71,7 @@ class GraphHook[T: StateProtocol, S: SharedProtocol](ABC):
         pass
 
     
-    async def on_spawn_branch_end(self, state: T, shared: S, branch: Branch[T, S], trigger: NextNode[T, S], branch_registry: dict[SingleSource[T, S], list[Branch[T, S]]], join_registry: dict[Join[T, S], list[Branch[T, S]]]):
+    async def on_spawn_branch_end(self, state: T, shared: S, branch: Branch[T, S], trigger: NextNode[T, S], branch_registry: dict[SingleSource[T, S], list[Branch[T, S]]], join_registry: dict[BranchJoin[T, S], list[Branch[T, S]]]):
         """
         Called after a branch is spawned.
 

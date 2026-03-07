@@ -11,7 +11,7 @@ import traceback
 from ..states import StateProtocol, SharedProtocol
 from ..diff import Change, ChangeConflictException, Diff
 from ..nodes import Node, END, START
-from .types import SingleNext, NextNode, ErrorEntry, SingleErrorSource, Entries, BranchContainer, SingleSource, Source, Types, ResolvedNext, Join
+from .types import SingleNext, NextNode, ErrorEntry, SingleErrorSource, Entries, BranchContainer, SingleSource, Source, Types, ResolvedNext, BranchJoin
 from .hooks import GraphHook
 from .branches import Branch
 
@@ -42,56 +42,113 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
 
     If you want to disable type checking for the graph, you can use `typing.Any` as generic typing parameters in the graph.
 
-    
-    ## Edges
 
-    The edges are defined as a list of tuples, where the first element is the source and the second element reveals the next node.
+    ## Branches
 
-    ### Branches
+    A graph is defined by a number of branches, with at least one branch having `START` as their first source element.
 
-    The edges are contained in branches. A branch is a tuple with edges and a join parameter at the end. 
+    A branch consists of a tuple of `Source` or/and `Next` elements. The first element of the tuple is the source of the branch, the last element is the join element of the branch. 
 
-    #### Spawning
+    ### Edges
 
-    A branch is spawned when the source of the first edge of the branch is triggered.
+    The edges of a branch are defined by a tuple of elements, which resolve to edges.
+
+    An edge consists of a `Source` and a `Next` element.
+
+    The edges are calculated as follows:
+
+    ```
+    T = (E_0, …, E_{n−1})
+
+    ∀ x ∈ {0, …, n−3}: # n−3 because the last element is the join element
+
+        {(a, b) ∈ E_x × E_{x+1} | a is a Source ∧ b is a Next}
+
+    where × denotes the Cartesian product.
+
+    ```
+
+    Therefore the tuple must include at least a `Source`, a `Next`, and the join parameter, which is `element_{n-1}` and excluded from the edge calculation.
+
+    This example would resolve to the following edges:
+
+    ```python
+    edges=[(
+        START,
+        node1,
+        node2,
+        
+        node3
+    )]
+ 
+    (START, node1),
+    (node1, node2)
+    # NOT (node2, node3), see chapter 'Joining'
+    ```
+
+    ### Spawning
+
+    A branch is spawned when the source of the branch is triggered.
+
+    The source of the branch can be a node or `START` or a list of that.
 
     In this example it would be on `START`:
 
     ```python
     edges=[(
-       (START, node1),
-       (node1, node2),
-       END
+        START,
+        node1,
+        node2,
+        
+        END
     )]
     ```
 
-    In this example it would be on `node1` and on `node2` each:
+    In this example it would be on `START` and on `node1` each, spawning two branches total:
 
     ```python
     edges=[(
-       ([node1, node2], node3),
-       node4
+       [START, node1], 
+       node2,
+
+       node3 # join node
     )]
     ```
 
-    #### Joining
+    ### Joining
+
+    Joining describes the process of merging the states of multiple branches into one.
+
+    The join parameter defines the node, exactly before which the branches will be joined. Other branches will wait in each step for all other branches that aim to join on its next node.
 
     The join parameter can be of the following types:
 
     - `None`: The branch will not be joined.
-    - `END`: The branch will be joined at the end of the graph.
-    - A node instance: The branch will be joined directly before the given node is executed in any branch into this branch.
+    - `END`: The branch will be joined at the end of the graph, the merged state will be returned as the result of the graph.
+    - A single node instance: The branch will be joined directly before another branch executes this specific node.
 
-    The process of joining describes waiting for the branches to finish wich aim to join and then applying the changes to the state of the whole finished branch to the state of the joining branch.
+    ### Notation
 
-    ### Formats
+    `Source` and `Next` parameters allow the following types:
+    - A single node instance.
 
-    A branch supports different formats for the edges.
+    `Source` can also be:
+    - `START`: The start of the graph.
+    - `Exception`: Triggers when an exception occurs in the graph in an edge located BEFORE this in the tuple.
+    - `(Exception, node)` or `(Exception, [node1, node2])`: Triggers when an exception occurs in the graph in an edge located BEFORE this in the tuple and the exception occuredd in the node `node` or one of the nodes `node1` and `node2`.
+    - A list of all allowed types.
 
-    - `(source, target)`: A single edge from source to target.
-    - `(START, target)`: A single edge from the start of the graph to target.
-    - `(source, None)`: A single edge from source to no target. `END` is not allowed here, since it would be redundant. It is only allowed in join parameters to distinct join at the end of the graph (`END`) from not joining (`None`)
-    - `([source1, source2], target)`: Multiple edges from source1 and source2 to target.
+    `Next` can also be:
+    - A list of all allowed types.
+    - A function (sync/async) that takes the state and shared and returns any of the allowed types.
+
+
+    The following notations are allowed for edges:
+
+    - `node1, node2`: A single edge from node1 to node2.
+    - `START, node1`: A single edge from the start of the graph to node1. START is only called when the branch has `START` as source.
+    - `node, None`: A redundant edge that does nothing.
+    - `[source1, source2], target`: Multiple edges from source1 and source2 to target.
     - `(source, [target1, target2])`: Multiple edges from source to target1 and target2.
     - `([source1, source2], [target1, target2])`: Multiple edges from source1 and source2 to target1 and target2. This will create 4 edges in total.
     - `(source, lambda st, sh: [target1, target2] if sh.x)`: A dynamic edge from source to target. The function takes the state and the shared state as arguments. It must return a node, a list of nodes, END or None. Async functions are also supported. They are executed sequentially so there are no race conditions.
@@ -125,11 +182,16 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
         self.hooks = hooks or []
 
         self.branch_registry: dict[SingleSource[T, S], list[Branch[T, S]]] = defaultdict(list)
-        self.join_registry: dict[Join[T, S], list[Branch[T, S]]] = defaultdict(list)
+        self.join_registry: dict[BranchJoin[T, S], list[Branch[T, S]]] = defaultdict(list)
 
         self.index_branches()
 
     def index_branches(self) -> None:
+        """
+        Index the branches by their sources.
+        """
+
+
         for branch_container in self.edges:
 
             if len(branch_container) < 3:
@@ -144,7 +206,7 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
 
             for source in sources:
 
-                branch = Branch[T, S]((source, *branch_container[1:]))
+                branch = Branch[T, S](edges=branch_container, source=source)
                 self.branch_registry[source].append(branch)
 
 
@@ -446,23 +508,23 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
             raise ValueError(f"Invalid current_nodes type: {type(current_nodes)}")
 
 
-        # Instant nodes
-        current_instant_next_list: list[NextNode[T, S]] = []
+        # # Instant nodes
+        # current_instant_next_list: list[NextNode[T, S]] = []
 
-        while True:
+        # while True:
 
-            current_entries = [
-                entry
-                for next in current_instant_next_list 
-                for entry in branch.edge_index[next.node]
-                if entry.config.instant
-            ]
+        #     current_entries = [
+        #         entry
+        #         for next in current_instant_next_list 
+        #         for entry in branch.edge_index[next.node]
+        #         if entry.config.instant
+        #     ]
             
-            if not current_entries:
-                break
+        #     if not current_entries:
+        #         break
             
-            current_instant_next_list = await self.resolve_entries(state, shared, current_entries)
-            next_list.extend(current_instant_next_list)
+        #     current_instant_next_list = await self.resolve_entries(state, shared, current_entries)
+        #     next_list.extend(current_instant_next_list)
 
 
         return next_list
@@ -511,7 +573,7 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
                         await self.resolve_entries(state, shared, [entry])
                     )
 
-                    if not entry.config.propagate:
+                    if not entry.propagate:
                         break
             else: # Not consumed
                 unhandled.append(e)

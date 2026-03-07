@@ -2,7 +2,7 @@
 from .nodes import START, END, Node
 from .states import State, Shared, StateProtocol, SharedProtocol, StateAttribute, SharedAttribute, Stream
 from .graph.graphs import Graph
-from .graph.types import Config, ErrorConfig
+# from .graph.types import Config, ErrorConfig
 
 __all__ = [
     "Node",
@@ -14,8 +14,8 @@ __all__ = [
     "SharedAttribute",
     "Stream",
     "Graph",
-    "Config",
-    "ErrorConfig",
+    # "Config",
+    # "ErrorConfig",
     "START",
     "END",
 ]
