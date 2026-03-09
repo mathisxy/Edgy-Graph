@@ -100,8 +100,22 @@ class Graph[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol
     ### Error Handling
     The `Exception` source can be used to create fallback paths:
     
-    - `Exception`: Catches any error in preceding nodes of the same branch.
+    - `ValueError`: Catches any subclass of `ValueError` raised in preceding nodes of the same branch.
     - `(Exception, [node1, node2])`: Specifically handles errors occurring in `node1` or `node2`.
+
+    ### Operators
+
+    - `-Node`: Denotes a node to be only considered as a next node, not as a source (subtracting an execution path).
+    - `+Node`: Denotes a node to be only considered as a source, not as a next node (adding an execution path in).
+
+    **Example**:
+    `edges=[(START, [node1, -extra_node], node2]`
+    1. (START, node1), 
+    2. (START, extra_node)
+    2. (node1, node2)
+
+    **Note**: The `-` operator prevents the edge (extra_node, node2) from being created.
+
 
     Attributes:
         edges: A list of branches with compatible nodes that build the graph.
