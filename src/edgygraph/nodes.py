@@ -18,7 +18,11 @@ class Node[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol]
     """
 
     dependencies: set[str] = set()
-    """The pip dependencies of the node (python packages). On initialization of the node a check is performed if the dependencies are installed with importlib. If not an error is raised."""
+    """
+    The pip dependencies of the node (python packages). On initialization of the node a check is performed if the dependencies are installed with importlib. If not an error is raised.
+    
+    The dependencies are collected from all parent classes. That means if a parent class has dependencies, the child class will also have those, but the child class can add more by setting the `dependencies` attribute without the need to repeat the parent classes dependencies.
+    """
 
     @classmethod
     def check_dependencies(cls) -> None:
