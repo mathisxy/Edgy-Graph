@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from copy import copy
 from pydantic import BaseModel
 from typing import Literal
-
+from importlib import metadata
 
 from .states import StateProtocol, SharedProtocol
 
@@ -16,6 +16,25 @@ class Node[T: StateProtocol = StateProtocol, S: SharedProtocol = SharedProtocol]
 
     The node must implement the `__call__` method to run the node.
     """
+
+    dependencies: list[str] = []
+    """The pip dependencies of the node (python packages). On initialization of the node a check is performed if the dependencies are installed with importlib. If not an error is raised."""
+
+    @classmethod
+    def check_dependencies(cls) -> None:
+        """
+        Checks if the dependencies of the node are installed.
+        """
+        for dependency in cls.dependencies:
+            try:
+                metadata.version(dependency)
+            except metadata.PackageNotFoundError:
+                raise ImportError(f"Dependency {dependency} not found but required by node {cls.__name__}. Please install it with pip install {dependency}")
+
+
+    def __init__(self) -> None:
+        self.check_dependencies()
+
     
     @abstractmethod
     async def __call__(self, state: T, shared: S) -> None:
