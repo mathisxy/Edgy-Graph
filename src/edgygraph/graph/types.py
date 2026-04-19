@@ -156,21 +156,6 @@ class Types[T: StateProtocol, S: SharedProtocol]:
             cls.is_single_error_source_list(x)
         )
     
-    # @classmethod
-    # def is_single_branch_source(cls, x: Any) -> TypeGuard[SingleBranchSource[T, S]]:
-    #     return x is START or cls.is_single_source(x)
-    
-    # @classmethod
-    # def is_single_branch_source_list(cls, x: Any) -> TypeGuard[list[SingleBranchSource[T, S]]]:
-    #     return isinstance(x, list) and all(cls.is_single_branch_source(n) for n in cast(list[Any], x))
-
-    # @classmethod
-    # def is_branch_source(cls, x: Any) -> TypeGuard[BranchSource[T, S]]:
-    #     return (
-    #         cls.is_single_branch_source(x) or
-    #         cls.is_single_branch_source_list(x)
-    #     )
-    
     @classmethod
     def is_any_single_source(cls, x: Any) -> TypeGuard[SingleSourceWithConfig[T, S] | SingleErrorSource[T, S]]:
         return cls.is_single_source_with_config(x) or cls.is_single_error_source(x)
@@ -187,16 +172,6 @@ class Types[T: StateProtocol, S: SharedProtocol]:
     def is_branch_join(cls, x: Any) -> TypeGuard[BranchJoin[T, S]]:
         return x is END or cls.is_next(x)
 
-
-# class Config(BaseModel):
-#     """
-#     Configuration for the edge.
-
-#     Attributes:
-#         instant: If the edge should be executed parallel to the source node. Instant edges are traversed recursively. Make sure to avoid infinite loops.
-#     """
-
-#     instant: bool = False
 
 class ErrorConfig(BaseModel):
     """
